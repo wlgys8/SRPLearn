@@ -20,8 +20,8 @@ namespace SRPLearn{
     public class XRenderPipeline : RenderPipeline
     {
 
-        private ShaderTagId _shaderTag = new ShaderTagId("ForwardBase");
-        
+        private ShaderTagId _shaderTag = new ShaderTagId("XForwardBase");
+        private LightConfigurator _lightConfigurator = new LightConfigurator();
 
         protected override void Render(ScriptableRenderContext context, Camera[] cameras)
         {
@@ -41,6 +41,7 @@ namespace SRPLearn{
             //对场景进行裁剪
             camera.TryGetCullingParameters( out var cullingParams);
             var cullingResults = context.Cull(ref cullingParams);
+            _lightConfigurator.SetupShaderLightingParams(context,ref cullingResults);
             var drawSetting = CreateDrawSettings(camera);
             var filterSetting = new FilteringSettings(RenderQueueRange.all);
             //绘制物体
