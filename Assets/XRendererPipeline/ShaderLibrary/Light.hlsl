@@ -1,13 +1,7 @@
-#include "HLSLSupport.cginc"
-CBUFFER_START(UnityLighting)
-//环境光
-half4 _XAmbientColor;
-//主灯光方向
-float4 _XMainLightDirection;
-//主灯光颜色
-half4 _XMainLightColor;
+#ifndef X_LIGHT_INCLUDED
+#define X_LIGHT_INCLUDED
 
-CBUFFER_END
+#include "./LightInput.hlsl"
 
 
 //Lambert漫反射
@@ -28,3 +22,4 @@ half4 BlinnPongLight(float3 positionWS,float3 normalWS,float shininess,half4 dif
     return _XAmbientColor + LambertDiffuse(normalWS) * diffuseColor + BlinnPhongSpecular(viewDir,normalWS,shininess) * specularColor; 
 }
 
+#endif

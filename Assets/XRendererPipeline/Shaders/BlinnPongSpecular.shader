@@ -5,22 +5,39 @@
         _MainTex ("Texture", 2D) = "white" {}
         _Shininess("Shininess",Range(10,128)) = 50
         _SpecularColor("SpecularColor",Color) = (1,1,1,1)
+        [Toggle(_RECEIVE_SHADOWS_OFF)] _RECEIVE_SHADOWS_OFF ("Receive Shadows Off?", Float) = 0
     }
+
     SubShader
     {
         Tags { "RenderType"="Opaque" "LightMode"="XForwardBase"}
         LOD 100
 
+        HLSLINCLUDE
+        #pragma enable_cbuffer
+        #include "UnityCG.cginc"
+        #include "../ShaderLibrary/Light.hlsl"
+        #include "../ShaderLibrary/Shadow.hlsl"
+
+
+
+        CBUFFER_START(UnityPerMaterial)
+        float4 _MainTex_ST;
+        CBUFFER_END
+        
+
+        ENDHLSL
+
         Pass
         {
-
+            Name "DEFAULT"
+            
             HLSLPROGRAM
             
             #pragma vertex PassVertex
             #pragma fragment PassFragment
-            #pragma enable_cbuffer
-            #include "UnityCG.cginc"
-            #include "../ShaderLibrary/Light.hlsl"
+
+            #pragma shader_feature _RECEIVE_SHADOWS_OFF
 
             struct Attributes
             {
@@ -35,14 +52,10 @@
                 float4 positionCS   : SV_POSITION;
                 float3 normalWS    : TEXCOORD1;
                 float3 positionWS   : TEXCOORD2;
-                
             };
-
             UNITY_DECLARE_TEX2D(_MainTex);
-
             CBUFFER_START(UnityPerMaterial)
             float _Shininess;
-            float4 _MainTex_ST;
             CBUFFER_END
 
             Varyings PassVertex(Attributes input)
@@ -62,8 +75,26 @@
                 float3 positionWS = input.positionWS;
                 float3 normalWS = input.normalWS;
                 half4 color = BlinnPongLight(positionWS,normalWS,_Shininess,diffuseColor,half4(1,1,1,1));
-                return color ;
+                return (1 - GetMainLightShadowAtten(positionWS,normalWS)) * color;
             }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "ShadowCaster"
+            Tags{"LightMode" = "ShadowCaster"}
+
+            ZWrite On
+            ZTest LEqual
+            ColorMask 0
+            Cull Back
+
+            HLSLPROGRAM
+
+            #pragma vertex ShadowCasterVertex
+            #pragma fragment ShadowCasterFragment
+        
             ENDHLSL
         }
     }

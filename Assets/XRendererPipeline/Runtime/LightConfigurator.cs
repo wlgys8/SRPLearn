@@ -67,7 +67,9 @@ namespace SRPLearn{
             return mainLightIndex;
         }
 
-        public void SetupShaderLightingParams(ScriptableRenderContext context, ref CullingResults cullingResults){
+        private int _mainLightIndex = -1;
+
+        public LightData SetupShaderLightingParams(ScriptableRenderContext context, ref CullingResults cullingResults){
             var visibleLights = cullingResults.visibleLights;
             var mainLightIndex = GetMainLightIndex(visibleLights);
             if(mainLightIndex >= 0){
@@ -79,7 +81,14 @@ namespace SRPLearn{
                 Shader.SetGlobalColor(ShaderProperties.MainLightColor,new Color(0,0,0,0));
             }
             Shader.SetGlobalColor(ShaderProperties.AmbientColor,RenderSettings.ambientLight);
+            _mainLightIndex = mainLightIndex;
+            return new LightData(){
+                mainLightIndex = mainLightIndex,
+                mainLight = visibleLights[mainLightIndex],
+            };
         }
+
+
 
 
         public class ShaderProperties{
@@ -89,5 +98,10 @@ namespace SRPLearn{
 
             public static int AmbientColor = Shader.PropertyToID("_XAmbientColor");
         }
+    }
+
+    public struct LightData{
+        public int mainLightIndex;
+        public VisibleLight mainLight;
     }
 }
