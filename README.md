@@ -11,5 +11,5 @@ Unity版本: 2019.4.16
 
 - [创建渲染管线，绘制Cube](https://github.com/wlgys8/SRPLearn/wiki/Hello)
 - [支持平行光 - BlinnPong光照模型](https://github.com/wlgys8/SRPLearn/wiki/DirLight)
-- 平行光投影
+- [平行光投影 - Shadow Mapping](https://github.com/wlgys8/SRPLearn/wiki/MainLightShadow)
 - 待补充
