@@ -31,8 +31,14 @@ namespace SRPLearn{
 
         private ShaderTagId _shaderTag = new ShaderTagId("XForwardBase");
         private LightConfigurator _lightConfigurator = new LightConfigurator();
+
+        private RenderObjectPass _opaquePass = new RenderObjectPass(false);
+        private RenderObjectPass _transparentPass = new RenderObjectPass(true);
+
         private ShadowCasterPass _shadowCastPass = new ShadowCasterPass();
         private CommandBuffer _command = new CommandBuffer();
+
+
 
         public XRenderPipeline(XRendererPipelineAsset setting){
             GraphicsSettings.useScriptableRenderPipelineBatching = setting.enableSrpBatcher;
@@ -64,6 +70,7 @@ namespace SRPLearn{
             //对场景进行裁剪
             camera.TryGetCullingParameters( out var cullingParams);
             var cullingResults = context.Cull(ref cullingParams);
+
             var lightData = _lightConfigurator.SetupShaderLightingParams(context,ref cullingResults);
 
             //投影Pass
@@ -71,14 +78,14 @@ namespace SRPLearn{
 
             //重设摄像机参数
             context.SetupCameraProperties(camera);
-
             //清除摄像机背景
             ClearCameraTarget(context,camera);
-      
-            var drawSetting = CreateDrawSettings(camera);
-            var filterSetting = new FilteringSettings(RenderQueueRange.all);
-            //绘制物体
-            context.DrawRenderers(cullingResults,ref drawSetting,ref filterSetting);
+
+            //非透明物体渲染
+            _opaquePass.Execute(context,camera,ref cullingResults);
+
+            //透明物体渲染
+            _transparentPass.Execute(context,camera,ref cullingResults);
 
         }
 

@@ -1,17 +1,20 @@
-﻿Shader "SRPLearn/BlinnPongSpecular"
+﻿Shader "SRPLearn/BlinnPongSpecularTransparent"
 {
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
         _Shininess("Shininess",Range(10,128)) = 50
         _SpecularColor("SpecularColor",Color) = (1,1,1,1)
+        _Color("Color",Color) = (1,1,1,1)
         [Toggle(_RECEIVE_SHADOWS_OFF)] _RECEIVE_SHADOWS_OFF ("Receive Shadows Off?", Float) = 0
     }
 
     SubShader
     {
-        Tags { "RenderType"="Opaque" "LightMode"="XForwardBase"}
+        Tags { "RenderType"="Transparent" "LightMode"="XForwardBase" "Queue" = "Transparent"}
         LOD 100
+
+        ZWrite Off
 
         HLSLINCLUDE
         #pragma enable_cbuffer
@@ -19,20 +22,17 @@
         #include "../ShaderLibrary/Light.hlsl"
         #include "../ShaderLibrary/Shadow.hlsl"
 
-
-
-
         ENDHLSL
 
         Pass
         {
             Name "DEFAULT"
-
+            
+            Blend SrcAlpha OneMinusSrcAlpha
             HLSLPROGRAM
             
             #pragma vertex PassVertex
             #pragma fragment PassFragment
-
             #pragma shader_feature _RECEIVE_SHADOWS_OFF
 
             struct Attributes
@@ -50,11 +50,14 @@
                 float3 positionWS   : TEXCOORD2;
             };
             UNITY_DECLARE_TEX2D(_MainTex);
+
             CBUFFER_START(UnityPerMaterial)
             float _Shininess;
             fixed4 _SpecularColor;
+            fixed4 _Color;
             float4 _MainTex_ST;
             CBUFFER_END
+
 
             Varyings PassVertex(Attributes input)
             {
@@ -68,33 +71,16 @@
 
             half4 PassFragment(Varyings input) : SV_Target
             {
-
-                half4 diffuseColor = UNITY_SAMPLE_TEX2D(_MainTex,input.uv);
+                half4 diffuseColor = UNITY_SAMPLE_TEX2D(_MainTex,input.uv) ;
                 float3 positionWS = input.positionWS;
                 float3 normalWS = input.normalWS;
                 half4 color = BlinnPongLight(positionWS,normalWS,_Shininess,diffuseColor,_SpecularColor);
                 float shadowAtten = 1 - GetMainLightShadowAtten(positionWS,normalWS);
-                return shadowAtten * color;
+                color = half4(color.rgb * _Color.rgb * shadowAtten,_Color.a);
+                return color;
             }
             ENDHLSL
         }
-
-        Pass
-        {
-            Name "ShadowCaster"
-            Tags{"LightMode" = "ShadowCaster"}
-
-            ZWrite On
-            ZTest LEqual
-            ColorMask 0
-            Cull Back
-
-            HLSLPROGRAM
-
-            #pragma vertex ShadowCasterVertex
-            #pragma fragment ShadowCasterFragment
-        
-            ENDHLSL
-        }
+    
     }
 }
