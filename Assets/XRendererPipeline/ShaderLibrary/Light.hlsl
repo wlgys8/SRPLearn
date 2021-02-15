@@ -16,10 +16,15 @@ half4 BlinnPhongSpecular(float3 viewDir,float3 normal,float shininess){
     return pow(nh,shininess) * _XMainLightColor;
 }
 
+//返回BlinnPong漫反射和高光项
+half4 BlinnPhongDiffuseAndSpecular(float3 positionWS,float3 normalWS,float shininess,half4 diffuseColor,half4 specularColor){
+    float3 viewDir = normalize( _WorldSpaceCameraPos - positionWS);
+    return LambertDiffuse(normalWS) * diffuseColor + BlinnPhongSpecular(viewDir,normalWS,shininess) * specularColor; 
+}
+
 //BlinnPong光照模型
 half4 BlinnPongLight(float3 positionWS,float3 normalWS,float shininess,half4 diffuseColor,half4 specularColor){
-    float3 viewDir = normalize( _WorldSpaceCameraPos - positionWS);
-    return _XAmbientColor + LambertDiffuse(normalWS) * diffuseColor + BlinnPhongSpecular(viewDir,normalWS,shininess) * specularColor; 
+    return _XAmbientColor +BlinnPhongDiffuseAndSpecular(positionWS,normalWS,shininess,diffuseColor,specularColor);
 }
 
 #endif

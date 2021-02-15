@@ -74,9 +74,9 @@
                 half4 diffuseColor = UNITY_SAMPLE_TEX2D(_MainTex,input.uv) ;
                 float3 positionWS = input.positionWS;
                 float3 normalWS = input.normalWS;
-                half4 color = BlinnPongLight(positionWS,normalWS,_Shininess,diffuseColor,_SpecularColor);
+                half4 diffuseAndSpec = BlinnPhongDiffuseAndSpecular(positionWS,normalWS,_Shininess,diffuseColor,_SpecularColor);
                 float shadowAtten = 1 - GetMainLightShadowAtten(positionWS,normalWS);
-                color = half4(color.rgb * _Color.rgb * shadowAtten,_Color.a);
+                half4 color = half4( (_XAmbientColor.rgb + diffuseAndSpec.rgb  * shadowAtten) *  _Color.rgb,_Color.a);
                 return color;
             }
             ENDHLSL
