@@ -19,6 +19,9 @@ float GetMainLightShadowAtten(float3 positionWS,float3 normalWS){
     #if _RECEIVE_SHADOWS_OFF
         return 0;
     #else
+        if(_ShadowParams.z == 0){
+            return 0;
+        }
         float3 shadowMapPos = WorldToShadowMapPos(positionWS + normalWS * _ShadowParams.y);
         float depthToLight = shadowMapPos.z;
         float2 sampeUV = shadowMapPos.xy;

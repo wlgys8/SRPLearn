@@ -84,7 +84,7 @@ namespace SRPLearn{
             _mainLightIndex = mainLightIndex;
             return new LightData(){
                 mainLightIndex = mainLightIndex,
-                mainLight = visibleLights[mainLightIndex],
+                mainLight = mainLightIndex>=0 && mainLightIndex<visibleLights.Length? visibleLights[mainLightIndex]:default(VisibleLight),
             };
         }
 
@@ -103,5 +103,9 @@ namespace SRPLearn{
     public struct LightData{
         public int mainLightIndex;
         public VisibleLight mainLight;
+
+        public bool HasMainLight(){
+            return mainLightIndex >= 0;
+        }
     }
 }

@@ -18,13 +18,6 @@ namespace SRPLearn
             _commandBuffer.name = "ShadowCaster";
         }
 
-
-
-        private void ConfigShaderParams(ref LightData lightData){
-            var mainLight = lightData.mainLight;
-            var lightDirection = mainLight.light.gameObject.transform.forward;
-        }
-
         private static int GetShadowMapResolution(Light light){
             switch(light.shadowResolution){
                 case LightShadowResolution.VeryHigh:
@@ -80,21 +73,24 @@ namespace SRPLearn
             return textureScaleAndBias * worldToShadow;
         }
         public void Execute(ScriptableRenderContext context,Camera camera,ref CullingResults cullingResults,ref LightData lightData){
-            //false表示该灯光对场景无影响
-            if(!cullingResults.GetShadowCasterBounds(lightData.mainLightIndex,out var lightBounds)){
+            if(!lightData.HasMainLight()){
+                //表示场景无主灯光
+                Shader.SetGlobalVector(ShaderProperties.ShadowParams,new Vector4(0,0,0,0));
                 return;
             }
-
+            //false表示该灯光对场景无影响
+            if(!cullingResults.GetShadowCasterBounds(lightData.mainLightIndex,out var lightBounds)){
+                Shader.SetGlobalVector(ShaderProperties.ShadowParams,new Vector4(0,0,0,0));
+                return;
+            }
             var mainLight = lightData.mainLight;
             var lightComp = mainLight.light;
-
             var shadowMapResolution = GetShadowMapResolution(lightComp);
-
             //get light matrixView,matrixProj,shadowSplitData
             cullingResults.ComputeDirectionalShadowMatricesAndCullingPrimitives(lightData.mainLightIndex,0,1,
             new Vector3(1,0,0),shadowMapResolution,lightComp.shadowNearPlane,out var matrixView,out var matrixProj,out var shadowSplitData);
             var matrixWorldToShadowMapSpace = GetWorldToShadowMapSpaceMatrix(matrixProj,matrixView);
-
+            // Debug.Log(shadowSplitData.cullingSphere);
             //generate ShadowDrawingSettings
             ShadowDrawingSettings shadowDrawSetting = new ShadowDrawingSettings(cullingResults,lightData.mainLightIndex);
             shadowDrawSetting.splitData = shadowSplitData;
