@@ -13,4 +13,5 @@ Unity版本: 2019.4.16
 - [支持平行光 - BlinnPong光照模型](https://github.com/wlgys8/SRPLearn/wiki/DirLight)
 - [平行光投影 - Shadow Mapping](https://github.com/wlgys8/SRPLearn/wiki/MainLightShadow)
 - [半透明物体渲染](https://github.com/wlgys8/SRPLearn/wiki/Transparent)
+- [阴影优化 - Casade Shadow Mapping](https://github.com/wlgys8/SRPLearn/wiki/CasadeShadowMapping)
 - 待补充

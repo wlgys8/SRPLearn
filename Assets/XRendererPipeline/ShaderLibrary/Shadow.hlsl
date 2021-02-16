@@ -2,16 +2,36 @@
 #define X_SHADOW_INCLUDED
 
 #include "./LightInput.hlsl"
+#include "./ShadowInput.hlsl"
 
 UNITY_DECLARE_TEX2D(_XMainShadowMap);
 
-float4 _ShadowParams; //x is depthBias,y is normal bias,z is strength
+float4 _ShadowParams; //x is depthBias,y is normal bias,z is strength,w is casadeCount
 
-///将坐标从世界坐标系转换到主灯光的裁剪空间
+#define ACTIVED_CASADE_COUNT _ShadowParams.w
+
+///将世界坐标转换到ShadowMapTexture空间,返回值的xy为uv，z为深度
 float3 WorldToShadowMapPos(float3 positionWS){
-    float4 positionCS = mul(_XMainLightMatrixWorldToShadowMap,float4(positionWS,1));
-    positionCS /= positionCS.w;
-    return positionCS;
+    for(int i = 0; i < ACTIVED_CASADE_COUNT; i ++){
+        float4 cullingSphere = _XCasadeCullingSpheres[i];
+        float3 center = cullingSphere.xyz;
+        float radiusSqr = cullingSphere.w * cullingSphere.w;
+        float3 d = (positionWS - center);
+        //计算世界坐标是否在包围球内。
+        if(dot(d,d) <= radiusSqr){
+            //如果是，就利用这一级别的Casade来进行采样
+            float4x4 worldToCasadeMatrix = _XWorldToMainLightCasadeShadowMapSpaceMatrices[i];
+            float4 shadowMapPos = mul(worldToCasadeMatrix,float4(positionWS,1));
+            shadowMapPos /= shadowMapPos.w;
+            return shadowMapPos;
+        }
+    }
+    //表示超出ShadowMap. 不显示阴影。
+    #if UNITY_REVERSED_Z
+    return float3(0,0,1);
+    #else
+    return float3(0,0,0);
+    #endif
 }
 
 ///检查世界坐标是否位于主灯光的阴影之中(0表示不在阴影中，大于0表示在阴影中,数值代表了阴影强度)

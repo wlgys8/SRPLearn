@@ -12,3 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ca408fc5393a8437a8e80ede5da516e8, type: 3}
   m_Name: XRendererPipelineAsset
   m_EditorClassIdentifier: 
+  _srpBatcher: 1
+  _shadowSetting:
+    _maxShadowDistance: 200
+    _shadowCascadeCount: 4
+    _casadeRatio1: 10
+    _casadeRatio2: 20
+    _casadeRatio3: 30
+    _casadeRatio4: 40

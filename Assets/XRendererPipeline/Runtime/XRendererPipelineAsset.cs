@@ -14,8 +14,7 @@ namespace SRPLearn{
         private bool _srpBatcher = true;
 
         [SerializeField]
-        [Range(10,500)]
-        private float _maxShadowDistance = 100;
+        private ShadowSetting _shadowSetting = new ShadowSetting();
 
         public bool enableSrpBatcher{
             get{
@@ -23,9 +22,9 @@ namespace SRPLearn{
             }
         }
 
-        public float shadowDistance{
+        public ShadowSetting shadowSetting{
             get{
-                return _maxShadowDistance;
+                return _shadowSetting;
             }
         }
 
@@ -81,14 +80,18 @@ namespace SRPLearn{
             //对场景进行裁剪
             camera.TryGetCullingParameters( out var cullingParams);
 
-            cullingParams.shadowDistance = _setting.shadowDistance;
+            cullingParams.shadowDistance = Mathf.Min(_setting.shadowSetting.shadowDistance,camera.farClipPlane - camera.nearClipPlane);
 
             var cullingResults = context.Cull(ref cullingParams);
 
             var lightData = _lightConfigurator.SetupShaderLightingParams(context,ref cullingResults);
 
+            var casterSetting = new ShadowCasterPass.ShadowCasterSetting();
+            casterSetting.cullingResults = cullingResults;
+            casterSetting.lightData = lightData;
+            casterSetting.shadowSetting = _setting.shadowSetting;
             //投影Pass
-            _shadowCastPass.Execute(context,camera,ref cullingResults,ref lightData);
+            _shadowCastPass.Execute(context,ref casterSetting);
 
             //重设摄像机参数
             context.SetupCameraProperties(camera);
@@ -112,3 +115,4 @@ namespace SRPLearn{
     }
 
 }
+
