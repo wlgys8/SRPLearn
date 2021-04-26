@@ -16,7 +16,7 @@ MonoBehaviour:
   _shadowSetting:
     _maxShadowDistance: 200
     _shadowCascadeCount: 4
-    _casadeRatio1: 10
-    _casadeRatio2: 20
-    _casadeRatio3: 30
-    _casadeRatio4: 40
+    _cascadeRatio1: 10
+    _cascadeRatio2: 20
+    _cascadeRatio3: 30
+    _cascadeRatio4: 40
