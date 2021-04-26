@@ -6,22 +6,22 @@
 
 UNITY_DECLARE_TEX2D(_XMainShadowMap);
 
-float4 _ShadowParams; //x is depthBias,y is normal bias,z is strength,w is casadeCount
+float4 _ShadowParams; //x is depthBias,y is normal bias,z is strength,w is cascadeCount
 
-#define ACTIVED_CASADE_COUNT _ShadowParams.w
+#define ACTIVED_CASCADE_COUNT _ShadowParams.w
 
 ///将世界坐标转换到ShadowMapTexture空间,返回值的xy为uv，z为深度
 float3 WorldToShadowMapPos(float3 positionWS){
-    for(int i = 0; i < ACTIVED_CASADE_COUNT; i ++){
-        float4 cullingSphere = _XCasadeCullingSpheres[i];
+    for(int i = 0; i < ACTIVED_CASCADE_COUNT; i ++){
+        float4 cullingSphere = _XCascadeCullingSpheres[i];
         float3 center = cullingSphere.xyz;
         float radiusSqr = cullingSphere.w * cullingSphere.w;
         float3 d = (positionWS - center);
         //计算世界坐标是否在包围球内。
         if(dot(d,d) <= radiusSqr){
-            //如果是，就利用这一级别的Casade来进行采样
-            float4x4 worldToCasadeMatrix = _XWorldToMainLightCasadeShadowMapSpaceMatrices[i];
-            float4 shadowMapPos = mul(worldToCasadeMatrix,float4(positionWS,1));
+            //如果是，就利用这一级别的Cascade来进行采样
+            float4x4 worldToCascadeMatrix = _XWorldToMainLightCascadeShadowMapSpaceMatrices[i];
+            float4 shadowMapPos = mul(worldToCascadeMatrix,float4(positionWS,1));
             shadowMapPos /= shadowMapPos.w;
             return shadowMapPos;
         }

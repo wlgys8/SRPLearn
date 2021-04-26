@@ -14,8 +14,8 @@ namespace SRPLearn
 
         private ShadowMapTextureHandler _shadowMapHandler = new ShadowMapTextureHandler();
 
-        private Matrix4x4[] _worldToCasadeShadowMapMatrices = new Matrix4x4[4];
-        private Vector4[] _casadeCullingSpheres = new Vector4[4];
+        private Matrix4x4[] _worldToCascadeShadowMapMatrices = new Matrix4x4[4];
+        private Vector4[] _cascadeCullingSpheres = new Vector4[4];
 
         public ShadowCasterPass(){
             _commandBuffer.name = "ShadowCaster";
@@ -42,7 +42,7 @@ namespace SRPLearn
         /// 通过ComputeDirectionalShadowMatricesAndCullingPrimitives得到的投影矩阵，其对应的x,y,z范围分别为均为(-1,1).
         /// 因此我们需要构造坐标变换矩阵，可以将世界坐标转换到ShadowMap齐次坐标空间。对应的xy范围为(0,1),z范围为(1,0)
         /// </summary>
-        static Matrix4x4 GetWorldToCasadeShadowMapSpaceMatrix(Matrix4x4 proj, Matrix4x4 view,Vector4 casadeOffsetAndScale)
+        static Matrix4x4 GetWorldToCascadeShadowMapSpaceMatrix(Matrix4x4 proj, Matrix4x4 view,Vector4 cascadeOffsetAndScale)
         {
             //检查平台是否zBuffer反转,一般情况下，z轴方向是朝屏幕内，即近小远大。但是在zBuffer反转的情况下，z轴是朝屏幕外，即近大远小。
             if (SystemInfo.usesReversedZBuffer)
@@ -70,18 +70,18 @@ namespace SRPLearn
             textureScaleAndBias.m22 = 0.5f;
             textureScaleAndBias.m23 = 0.5f;
 
-            //再将uv映射到casadeShadowMap的空间
-            var casadeOffsetAndScaleMatrix = Matrix4x4.identity;
+            //再将uv映射到cascadeShadowMap的空间
+            var cascadeOffsetAndScaleMatrix = Matrix4x4.identity;
 
-            //x = x * casadeOffsetAndScale.z + casadeOffsetAndScale.x
-            casadeOffsetAndScaleMatrix.m00 = casadeOffsetAndScale.z;
-            casadeOffsetAndScaleMatrix.m03 = casadeOffsetAndScale.x;
+            //x = x * cascadeOffsetAndScale.z + cascadeOffsetAndScale.x
+            cascadeOffsetAndScaleMatrix.m00 = cascadeOffsetAndScale.z;
+            cascadeOffsetAndScaleMatrix.m03 = cascadeOffsetAndScale.x;
 
-            //y = y * casadeOffsetAndScale.w + casadeOffsetAndScale.y
-            casadeOffsetAndScaleMatrix.m11 = casadeOffsetAndScale.w;
-            casadeOffsetAndScaleMatrix.m13 = casadeOffsetAndScale.y;
+            //y = y * cascadeOffsetAndScale.w + cascadeOffsetAndScale.y
+            cascadeOffsetAndScaleMatrix.m11 = cascadeOffsetAndScale.w;
+            cascadeOffsetAndScaleMatrix.m13 = cascadeOffsetAndScale.y;
 
-            return casadeOffsetAndScaleMatrix * textureScaleAndBias * worldToShadow;
+            return cascadeOffsetAndScaleMatrix * textureScaleAndBias * worldToShadow;
         }
 
         private void ClearAndActiveShadowMapTexture(ScriptableRenderContext context, int shadowMapResolution){
@@ -96,7 +96,7 @@ namespace SRPLearn
             context.ExecuteCommandBuffer(_commandBuffer);
         }
 
-        private void SetupShadowCasade(ScriptableRenderContext context,Vector2 offsetInAtlas, int resolution,ref Matrix4x4 matrixView,ref Matrix4x4 matrixProj){
+        private void SetupShadowCascade(ScriptableRenderContext context,Vector2 offsetInAtlas, int resolution,ref Matrix4x4 matrixView,ref Matrix4x4 matrixProj){
             _commandBuffer.Clear();
             _commandBuffer.SetViewport(new Rect(offsetInAtlas.x,offsetInAtlas.y,resolution,resolution));
             //设置view&proj矩阵
@@ -129,51 +129,51 @@ namespace SRPLearn
             //生成ShadowMapTexture
             _shadowMapHandler.AcquireRenderTextureIfNot(shadowMapResolution);
 
-            var casadeRatio = setting.shadowSetting.casadeRatio;
+            var cascadeRatio = setting.shadowSetting.cascadeRatio;
 
             this.ClearAndActiveShadowMapTexture(context,shadowMapResolution);
 
-            var casadeAtlasGridSize = Mathf.CeilToInt(Mathf.Sqrt(shadowSetting.casadeCount));
-            var casadeResolution = shadowMapResolution / casadeAtlasGridSize;
+            var cascadeAtlasGridSize = Mathf.CeilToInt(Mathf.Sqrt(shadowSetting.cascadeCount));
+            var cascadeResolution = shadowMapResolution / cascadeAtlasGridSize;
 
-            var casadeOffsetInAtlas = new Vector2(0,0);
+            var cascadeOffsetInAtlas = new Vector2(0,0);
 
-            for(var i = 0; i < shadowSetting.casadeCount; i ++){
+            for(var i = 0; i < shadowSetting.cascadeCount; i ++){
 
-                var x = i % casadeAtlasGridSize;
-                var y = i / casadeAtlasGridSize;
+                var x = i % cascadeAtlasGridSize;
+                var y = i / cascadeAtlasGridSize;
 
                 //计算当前级别的级联阴影在Atlas上的偏移位置
-                var offsetInAtlas = new Vector2(x * casadeResolution,y * casadeResolution);
+                var offsetInAtlas = new Vector2(x * cascadeResolution,y * cascadeResolution);
 
                 //get light matrixView,matrixProj,shadowSplitData
-                cullingResults.ComputeDirectionalShadowMatricesAndCullingPrimitives(lightData.mainLightIndex,i,shadowSetting.casadeCount,
-                casadeRatio,casadeResolution,lightComp.shadowNearPlane,out var matrixView,out var matrixProj,out var shadowSplitData);
+                cullingResults.ComputeDirectionalShadowMatricesAndCullingPrimitives(lightData.mainLightIndex,i,shadowSetting.cascadeCount,
+                cascadeRatio,cascadeResolution,lightComp.shadowNearPlane,out var matrixView,out var matrixProj,out var shadowSplitData);
                 
                 //generate ShadowDrawingSettings
                 ShadowDrawingSettings shadowDrawSetting = new ShadowDrawingSettings(cullingResults,lightData.mainLightIndex);
                 shadowDrawSetting.splitData = shadowSplitData;
                 
-                //设置Casade相关参数
-                SetupShadowCasade(context,offsetInAtlas,casadeResolution,ref matrixView,ref matrixProj);
+                //设置Cascade相关参数
+                SetupShadowCascade(context,offsetInAtlas,cascadeResolution,ref matrixView,ref matrixProj);
             
                 //绘制阴影
                 context.DrawShadows(ref shadowDrawSetting);
 
 
-                //计算Casade ShadowMap空间投影矩阵和包围圆
-                var casadeOffsetAndScale = new Vector4(offsetInAtlas.x,offsetInAtlas.y,casadeResolution,casadeResolution) / shadowMapResolution;
-                var matrixWorldToShadowMapSpace = GetWorldToCasadeShadowMapSpaceMatrix(matrixProj,matrixView,casadeOffsetAndScale);
-                _worldToCasadeShadowMapMatrices[i] = matrixWorldToShadowMapSpace;
-                _casadeCullingSpheres[i] = shadowSplitData.cullingSphere;
+                //计算Cascade ShadowMap空间投影矩阵和包围圆
+                var cascadeOffsetAndScale = new Vector4(offsetInAtlas.x,offsetInAtlas.y,cascadeResolution,cascadeResolution) / shadowMapResolution;
+                var matrixWorldToShadowMapSpace = GetWorldToCascadeShadowMapSpaceMatrix(matrixProj,matrixView,cascadeOffsetAndScale);
+                _worldToCascadeShadowMapMatrices[i] = matrixWorldToShadowMapSpace;
+                _cascadeCullingSpheres[i] = shadowSplitData.cullingSphere;
 
             }
 
             //setup shader params
-            Shader.SetGlobalMatrixArray(ShaderProperties.WorldToMainLightCasadeShadowMapSpaceMatrices,_worldToCasadeShadowMapMatrices);
-            Shader.SetGlobalVectorArray(ShaderProperties.CasadeCullingSpheres,_casadeCullingSpheres);
+            Shader.SetGlobalMatrixArray(ShaderProperties.WorldToMainLightCascadeShadowMapSpaceMatrices,_worldToCascadeShadowMapMatrices);
+            Shader.SetGlobalVectorArray(ShaderProperties.CascadeCullingSpheres,_cascadeCullingSpheres);
             //将阴影的一些数据传入Shader
-            Shader.SetGlobalVector(ShaderProperties.ShadowParams,new Vector4(lightComp.shadowBias,lightComp.shadowNormalBias,lightComp.shadowStrength,shadowSetting.casadeCount));
+            Shader.SetGlobalVector(ShaderProperties.ShadowParams,new Vector4(lightComp.shadowBias,lightComp.shadowNormalBias,lightComp.shadowStrength,shadowSetting.cascadeCount));
         }
 
         public class ShadowMapTextureHandler{
@@ -218,16 +218,16 @@ namespace SRPLearn
             
             //
             /// <summary>
-            /// 类型Matrix4x4[4]，表示每级Casade从世界到贴图空间的转换矩阵
+            /// 类型Matrix4x4[4]，表示每级Cascade从世界到贴图空间的转换矩阵
             /// </summary>
-            public static readonly int WorldToMainLightCasadeShadowMapSpaceMatrices = Shader.PropertyToID("_XWorldToMainLightCasadeShadowMapSpaceMatrices");
+            public static readonly int WorldToMainLightCascadeShadowMapSpaceMatrices = Shader.PropertyToID("_XWorldToMainLightCascadeShadowMapSpaceMatrices");
             
             /// <summary>
-            /// 类型Vector4[4],表示每级Casade的空间裁剪包围球
+            /// 类型Vector4[4],表示每级Cascade的空间裁剪包围球
             /// </summary>
-            public static readonly int CasadeCullingSpheres = Shader.PropertyToID("_XCasadeCullingSpheres");
+            public static readonly int CascadeCullingSpheres = Shader.PropertyToID("_XCascadeCullingSpheres");
 
-            //x为depthBias,y为normalBias,z为shadowStrength,w为当前的casade shadow数量
+            //x为depthBias,y为normalBias,z为shadowStrength,w为当前的cascade shadow数量
             public static readonly int ShadowParams = Shader.PropertyToID("_ShadowParams");
             public static readonly int MainShadowMap = Shader.PropertyToID("_XMainShadowMap");
 

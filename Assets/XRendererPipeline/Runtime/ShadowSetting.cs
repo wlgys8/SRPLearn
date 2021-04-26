@@ -20,42 +20,42 @@ namespace  SRPLearn
         [SerializeField]
         [Range(1,100)]
         [Tooltip("1级联阴影比重")]
-        private float _casadeRatio1 = 1;
+        private float _cascadeRatio1 = 1;
 
         [SerializeField]
         [Range(1,100)]
         [Tooltip("2级联阴影比重")]
-        private float _casadeRatio2 = 0;
+        private float _cascadeRatio2 = 0;
         [SerializeField]
         [Range(1,100)]
         [Tooltip("3级联阴影比重")]
-        private float _casadeRatio3 = 0;
+        private float _cascadeRatio3 = 0;
 
         [SerializeField]
         [Range(1,100)]
         [Tooltip("4级联阴影比重")]
-        private float _casadeRatio4 = 0;
+        private float _cascadeRatio4 = 0;
 
 
-        public int casadeCount{
+        public int cascadeCount{
             get{
                 return _shadowCascadeCount;
             }
         }
 
-        public Vector3 casadeRatio{
+        public Vector3 cascadeRatio{
             get{
-                var total = _casadeRatio1;
+                var total = _cascadeRatio1;
                 if(_shadowCascadeCount > 1){
-                    total += _casadeRatio2;
+                    total += _cascadeRatio2;
                 }
                 if(_shadowCascadeCount > 2){
-                    total += _casadeRatio3;
+                    total += _cascadeRatio3;
                 }
                 if(_shadowCascadeCount > 3){
-                    total += _casadeRatio4;
+                    total += _cascadeRatio4;
                 }
-                return new Vector3(_casadeRatio1 / total,_casadeRatio2 / total,_casadeRatio3 / total);
+                return new Vector3(_cascadeRatio1 / total,_cascadeRatio2 / total,_cascadeRatio3 / total);
             }
         }
 
