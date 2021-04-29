@@ -14,5 +14,5 @@ Unity版本: 2019.4.16
 - [平行光投影 - Shadow Mapping](https://github.com/wlgys8/SRPLearn/wiki/MainLightShadow)
 - [半透明物体渲染](https://github.com/wlgys8/SRPLearn/wiki/Transparent)
 - [阴影优化 - Cascade Shadow Mapping](https://github.com/wlgys8/SRPLearn/wiki/CascadeShadowMapping)
-- [点光源支持 - PointLigh](https://github.com/wlgys8/SRPLearn/wiki/PointLight)
+- [点光源支持 - PointLight](https://github.com/wlgys8/SRPLearn/wiki/PointLight)
 - 待补充
