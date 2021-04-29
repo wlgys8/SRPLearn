@@ -109,6 +109,10 @@ namespace SRPLearn{
         private DrawingSettings CreateDrawSettings(Camera camera){
             var sortingSetting = new SortingSettings(camera);
             var drawSetting = new DrawingSettings(_shaderTag,sortingSetting);
+            
+            //enable PerObjectLight
+            drawSetting.perObjectData |= PerObjectData.LightData;
+            drawSetting.perObjectData |= PerObjectData.LightIndices;
             return drawSetting;
         }
 

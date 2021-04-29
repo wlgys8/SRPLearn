@@ -10,8 +10,9 @@ Unity版本: 2019.4.16
 # 目录
 
 - [创建渲染管线，绘制Cube](https://github.com/wlgys8/SRPLearn/wiki/Hello)
-- [支持平行光 - BlinnPong光照模型](https://github.com/wlgys8/SRPLearn/wiki/DirLight)
+- [支持平行光 - BlinnPhong光照模型](https://github.com/wlgys8/SRPLearn/wiki/DirLight)
 - [平行光投影 - Shadow Mapping](https://github.com/wlgys8/SRPLearn/wiki/MainLightShadow)
 - [半透明物体渲染](https://github.com/wlgys8/SRPLearn/wiki/Transparent)
 - [阴影优化 - Cascade Shadow Mapping](https://github.com/wlgys8/SRPLearn/wiki/CascadeShadowMapping)
+- [点光源支持(PointLight)]
 - 待补充

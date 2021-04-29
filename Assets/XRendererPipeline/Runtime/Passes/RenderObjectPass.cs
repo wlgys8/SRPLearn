@@ -26,6 +26,8 @@ namespace SRPLearn{
             //设置物体渲染排序标准
             sortingSetting.criteria = _isTransparent?SortingCriteria.CommonTransparent:SortingCriteria.CommonOpaque;
             var drawSetting = new DrawingSettings(_shaderTag,sortingSetting);
+            drawSetting.perObjectData |= PerObjectData.LightData;
+            drawSetting.perObjectData |= PerObjectData.LightIndices;
             return drawSetting;
         }
     }

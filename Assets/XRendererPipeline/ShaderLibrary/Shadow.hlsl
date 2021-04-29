@@ -3,6 +3,7 @@
 
 #include "./LightInput.hlsl"
 #include "./ShadowInput.hlsl"
+#include "./SpaceTransform.hlsl"
 
 UNITY_DECLARE_TEX2D(_XMainShadowMap);
 
@@ -34,13 +35,13 @@ float3 WorldToShadowMapPos(float3 positionWS){
     #endif
 }
 
-///检查世界坐标是否位于主灯光的阴影之中(0表示不在阴影中，大于0表示在阴影中,数值代表了阴影强度)
+///检查世界坐标是否位于主灯光的阴影之中(1表示不在阴影中，小于1表示在阴影中,数值代表了阴影衰减)
 float GetMainLightShadowAtten(float3 positionWS,float3 normalWS){
     #if _RECEIVE_SHADOWS_OFF
-        return 0;
+        return 1;
     #else
         if(_ShadowParams.z == 0){
-            return 0;
+            return 1;
         }
         float3 shadowMapPos = WorldToShadowMapPos(positionWS + normalWS * _ShadowParams.y);
         float depthToLight = shadowMapPos.z;
@@ -48,10 +49,10 @@ float GetMainLightShadowAtten(float3 positionWS,float3 normalWS){
         float depth = UNITY_SAMPLE_TEX2D(_XMainShadowMap,sampeUV);
         #if UNITY_REVERSED_Z
             // depthToLight < depth 表示在阴影之中
-            return clamp(step(depthToLight + _ShadowParams.x,depth), 0,_ShadowParams.z);
+            return clamp(step(depth,depthToLight + _ShadowParams.x),1 - _ShadowParams.z,1);
         #else
             // depthToLight > depth表示在阴影之中
-            return clamp(step(depth,depthToLight - _ShadowParams.x), 0,_ShadowParams.z);
+            return clamp(step(depthToLight - _ShadowParams.x,depth), 1 - _ShadowParams.z,1);
         #endif
     #endif
 }
