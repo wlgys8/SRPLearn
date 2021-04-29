@@ -58,16 +58,19 @@ half4 BlinnPhongFinal(Varyings input){
     property.shininess = _Shininess;
 
     //计算主光源(平行光)BlinnPhong光照
-     XDirLight mainLight = GetMainLight();
-    half4 color = BlinnPhong(mainLight.direction,gemo,property) ;
-    color.rgb *= mainLight.color;
+    XDirLight mainLight = GetMainLight();
+    half4 mainLightColor = BlinnPhong(mainLight.direction,gemo,property);
+    mainLightColor *= mainLight.color;
 
     //计算主光源(平行光)阴影
     float shadowAtten = GetMainLightShadowAtten(positionWS,normalWS);
-    color.rgb *= shadowAtten;
+    mainLightColor *= shadowAtten;
 
     //计算点光源的BlinnPhong光照
-    color.rgb += BlinnPhongPointLights(gemo,property).rgb;
+    half4 pointLightsColor = BlinnPhongPointLights(gemo,property);
+
+    half4 color = _XAmbientColor + mainLightColor + pointLightsColor;
+    color.a = 1;
     return color;
 }
 
