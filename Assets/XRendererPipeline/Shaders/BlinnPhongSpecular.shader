@@ -28,6 +28,8 @@
             Cull Back
 
             HLSLPROGRAM
+
+            #pragma multi_compile _ShadowBiasReceiverPixel _ShadowBiasReceiverPixelAccurate
             
             #pragma vertex PassVertex
             #pragma fragment PassFragment
@@ -48,6 +50,10 @@
             Cull Back
 
             HLSLPROGRAM
+
+            #pragma multi_compile _ShadowBiasCasterVertex
+
+            #include "../ShaderLibrary/ShadowCaster.hlsl"
 
             #pragma vertex ShadowCasterVertex
             #pragma fragment ShadowCasterFragment

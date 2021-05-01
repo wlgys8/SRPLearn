@@ -74,7 +74,6 @@ namespace SRPLearn{
         }
 
         private void RenderPerCamera(ScriptableRenderContext context,Camera camera){
-
             //设置摄像机参数
             context.SetupCameraProperties(camera);
             //对场景进行裁剪

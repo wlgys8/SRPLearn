@@ -4,6 +4,12 @@ using UnityEngine;
 
 namespace  SRPLearn
 {
+    public enum ShadowBiasType{
+        CasterVertexBias,
+        ReceiverPixelBias,
+        ReceiverPixelBiasAccurate,
+    }
+
     [System.Serializable]
     public class ShadowSetting 
     {
@@ -36,6 +42,9 @@ namespace  SRPLearn
         [Tooltip("4级联阴影比重")]
         private float _cascadeRatio4 = 0;
 
+        [SerializeField]
+        private ShadowBiasType _shadowBiasType = ShadowBiasType.CasterVertexBias;
+
 
         public int cascadeCount{
             get{
@@ -59,7 +68,11 @@ namespace  SRPLearn
             }
         }
 
-
+        public ShadowBiasType biasType{
+            get{
+                return _shadowBiasType;
+            }
+        }
 
         public float shadowDistance{
             get{
