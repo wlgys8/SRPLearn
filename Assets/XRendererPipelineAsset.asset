@@ -17,7 +17,7 @@ MonoBehaviour:
     _maxShadowDistance: 100
     _shadowCascadeCount: 4
     _cascadeRatio1: 10
-    _cascadeRatio2: 90
+    _cascadeRatio2: 20
     _cascadeRatio3: 30
     _cascadeRatio4: 40
     _shadowBiasType: 0

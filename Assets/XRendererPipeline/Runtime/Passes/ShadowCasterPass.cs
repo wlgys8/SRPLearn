@@ -46,33 +46,39 @@ namespace SRPLearn
             context.ExecuteCommandBuffer(_commandBuffer);
         }
 
-        private void SetupShadowCascade(ScriptableRenderContext context,Vector2 offsetInAtlas, int resolution,ref Matrix4x4 matrixView,ref Matrix4x4 matrixProj,ref LightData lightData,ref ShadowSetting shadowSetting){
+        private void SetupShadowCascade(ScriptableRenderContext context,Vector2 offsetInAtlas, int resolution,
+        ref Matrix4x4 matrixView,ref Matrix4x4 matrixProj,ref LightData lightData,ref ShadowSetting shadowSetting){
             _commandBuffer.Clear();
             _commandBuffer.SetViewport(new Rect(offsetInAtlas.x,offsetInAtlas.y,resolution,resolution));
             //设置view&proj矩阵
             _commandBuffer.SetViewProjectionMatrices(matrixView,matrixProj);
 
             if(shadowSetting.biasType == ShadowBiasType.CasterVertexBias){
-                var shadowBiasData = this.CalculateShadowBias(resolution,ref matrixProj,ref lightData);
+                var shadowBiasData = this.CalculateShadowBias(resolution,ref matrixProj,ref lightData,ref shadowSetting);
                 _commandBuffer.SetGlobalVector(ShaderProperties.ShadowBias,new Vector4(shadowBiasData.depthBias,shadowBiasData.normalBias));
             }
 
             context.ExecuteCommandBuffer(_commandBuffer);
         }
 
-        private ShadowBiasData CalculateShadowBias(int shadowMapResolution,ref Matrix4x4 matrixProj,ref LightData lightData){
+        private ShadowBiasData CalculateShadowBias(int shadowMapResolution,ref Matrix4x4 matrixProj,ref LightData lightData,ref ShadowSetting shadowSetting){
             //在SRP中，平行光的投影视锥体为一个Box, width == height
             var frustumSize = 2 / matrixProj.m00; 
             //通过frustumSize比shadowMapResolution，我们可以计算得到shadowMap上的单个像素，覆盖了多少的世界距离(平行光视角)。以此作为评估ShadowMap精确度的指标之一。
             var texelResolution = frustumSize / shadowMapResolution;
 
             //由于Light面板的bias可调节范围只有0~2,不够用，因此这里*5，使其可以覆盖0~10。
-            var depthBias = lightData.mainLight.light.shadowBias * 5; 
-            var normalBias = lightData.mainLight.light.shadowNormalBias * 5;
+            float biasScale = 5;
 
             //shadowMap精度越低，对应的bias要越大
-            depthBias *= texelResolution; 
-            normalBias *= texelResolution;
+            biasScale *= texelResolution;
+
+            //对shadowmap进行aa，要采样附近多个像素，因此bias也需要扩大
+            var aaScale = ShadowUtils.GetSamplePixelSize(shadowSetting.shadowAAType);
+            biasScale *= aaScale;
+
+            var depthBias = lightData.mainLight.light.shadowBias * biasScale; 
+            var normalBias = lightData.mainLight.light.shadowNormalBias * biasScale;
 
             return new ShadowBiasData(){
                 depthBias = depthBias,
