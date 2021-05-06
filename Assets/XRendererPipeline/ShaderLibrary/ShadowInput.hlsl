@@ -12,4 +12,19 @@ float4 _XCascadeCullingSpheres[MAX_CASCADESHADOW_COUNT];
 
 CBUFFER_END
 
+
+
+#if X_SHADOW_PCF
+Texture2D _XMainShadowMap;
+SamplerComparisonState sampler_XMainShadowMap;
+half4 _ShadowAAParams; //x is PCF tap count, current support 1 & 4
+#else
+UNITY_DECLARE_TEX2D(_XMainShadowMap);
+#endif
+
+float4 _ShadowParams; //x is depthBias,y is normal bias,z is strength,w is cascadeCount
+float4 _CascadeShadowBiasScale;
+float4 _ShadowMapSize; //x = 1/shadowMap.width, y = 1/shadowMap.height,z = shadowMap.width,w = shadowMap.height
+
+
 #endif

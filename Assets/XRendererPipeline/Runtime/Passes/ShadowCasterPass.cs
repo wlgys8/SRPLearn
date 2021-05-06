@@ -39,7 +39,6 @@ namespace SRPLearn
             _commandBuffer.Clear();
             //设置渲染目标
             _commandBuffer.SetRenderTarget(_shadowMapHandler.renderTargetIdentifier,_shadowMapHandler.renderTargetIdentifier);
-            
             _commandBuffer.SetViewport(new Rect(0,0,shadowMapResolution,shadowMapResolution));
             //Clear贴图
             _commandBuffer.ClearRenderTarget(true,true,Color.black,1);
@@ -81,11 +80,38 @@ namespace SRPLearn
             };
         }
 
+        private void ConfigShadowBiasKeywords(CommandBuffer commandBuffer,ref ShadowSetting shadowSetting){
+            Utils.SetGlobalShaderKeyword(_commandBuffer,ShaderKeywords.ShadowBiasCasterVertex,shadowSetting.biasType == ShadowBiasType.CasterVertexBias);
+            Utils.SetGlobalShaderKeyword(_commandBuffer,ShaderKeywords.ShadowBiasReceiverPixel,shadowSetting.biasType == ShadowBiasType.ReceiverPixelBias);
+            Utils.SetGlobalShaderKeyword(_commandBuffer,ShaderKeywords.ShadowBiasReceiverPixelAccurate,shadowSetting.biasType == ShadowBiasType.ReceiverPixelBiasAccurate);
+        }
+
+        //
+        /// <summary>
+        /// 设置Shadow的相关参数，该设置是PerCamera的，综合了管线和MainLight的配置
+        /// </summary>
+        private void ConfigShadowAAParams(CommandBuffer commandBuffer,ShadowSetting setting){
+            var shadowAA = setting.shadowAAType;
+            switch(shadowAA){
+                case ShadowAAType.None:
+                commandBuffer.DisableShaderKeyword(ShaderKeywords.X_SHADOW_PCF);
+                break;
+                case ShadowAAType.PCF1:
+                commandBuffer.EnableShaderKeyword(ShaderKeywords.X_SHADOW_PCF);
+                break;
+                case ShadowAAType.PCF3Fast:
+                commandBuffer.EnableShaderKeyword(ShaderKeywords.X_SHADOW_PCF);
+                break;
+            }
+            if(shadowAA != ShadowAAType.None){
+                commandBuffer.SetGlobalVector(ShadowCasterPass.ShaderProperties.ShadowAAParams,new Vector4((int)shadowAA,0,0,0));
+            }
+        }
+
         private void ConfigPerCameraShadowSetting(ScriptableRenderContext context, ref ShadowSetting shadowSetting){
             _commandBuffer.Clear();
-            Utils.SetGlobalShaderKeyword(_commandBuffer,"_ShadowBiasCasterVertex",shadowSetting.biasType == ShadowBiasType.CasterVertexBias);
-            Utils.SetGlobalShaderKeyword(_commandBuffer,"_ShadowBiasReceiverPixel",shadowSetting.biasType == ShadowBiasType.ReceiverPixelBias);
-            Utils.SetGlobalShaderKeyword(_commandBuffer,"_ShadowBiasReceiverPixelAccurate",shadowSetting.biasType == ShadowBiasType.ReceiverPixelBiasAccurate);
+            this.ConfigShadowBiasKeywords(_commandBuffer,ref shadowSetting);
+            this.ConfigShadowAAParams(_commandBuffer,shadowSetting);
             context.ExecuteCommandBuffer(_commandBuffer);
         }
 
@@ -282,6 +308,17 @@ namespace SRPLearn
             public static readonly int CascadeShadowBiasScale = Shader.PropertyToID("_CascadeShadowBiasScale");
 
             public static readonly int ShadowBias = Shader.PropertyToID("_ShadowBias");
+
+            public static readonly int ShadowAAParams = Shader.PropertyToID("_ShadowAAParams");
+        }
+
+        public static class ShaderKeywords{
+  
+            public const string X_SHADOW_PCF = "X_SHADOW_PCF";
+            public const string ShadowBiasCasterVertex = "_ShadowBiasCasterVertex";
+            public const string ShadowBiasReceiverPixel = "_ShadowBiasReceiverPixel";
+            public const string ShadowBiasReceiverPixelAccurate = "_ShadowBiasReceiverPixelAccurate";
+
         }
     }
 }

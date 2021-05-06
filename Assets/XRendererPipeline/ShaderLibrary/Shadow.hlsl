@@ -4,24 +4,13 @@
 #include "./LightInput.hlsl"
 #include "./ShadowInput.hlsl"
 #include "./SpaceTransform.hlsl"
-
-
-UNITY_DECLARE_TEX2D(_XMainShadowMap);
-
-float4 _ShadowParams; //x is depthBias,y is normal bias,z is strength,w is cascadeCount
-float4 _CascadeShadowBiasScale;
-
-#define SHADOW_DEPTH_BIAS _ShadowParams.x
-#define SHADOW_NORMAL_BIAS _ShadowParams.y
-
-float4 _ShadowMapSize; //x = 1/shadowMap.width, y = 1/shadowMap.height
+#include "./ShadowTentFilter.hlsl"
 
 
 #define ACTIVED_CASCADE_COUNT _ShadowParams.w
 
 ///将世界坐标转换到ShadowMapTexture空间,返回值的xy为uv，z为深度
 float3 WorldToShadowMapPos(float3 positionWS){
-    float biasScales[4] = {_CascadeShadowBiasScale.x,_CascadeShadowBiasScale.y,_CascadeShadowBiasScale.z,_CascadeShadowBiasScale.w};
     for(int i = 0; i < ACTIVED_CASCADE_COUNT; i ++){
         float4 cullingSphere = _XCascadeCullingSpheres[i];
         float3 center = cullingSphere.xyz;
@@ -33,7 +22,6 @@ float3 WorldToShadowMapPos(float3 positionWS){
             float4x4 worldToCascadeMatrix = _XWorldToMainLightCascadeShadowMapSpaceMatrices[i];
             float4 shadowMapPos = mul(worldToCascadeMatrix,float4(positionWS,1));
             shadowMapPos /= shadowMapPos.w;
-
             return shadowMapPos;
         }
     }
@@ -45,18 +33,39 @@ float3 WorldToShadowMapPos(float3 positionWS){
     #endif
 }
 
+///来用显示shadowmap投影在物体上的分辨率。返回1或0
+float DebugShadowResolution(float2 uv){
+    float2 texelCoord = _ShadowMapSize.zw * uv;
+    float2 texelOriginal = floor(texelCoord);
+    return abs((texelOriginal.x % 2 + texelOriginal.y % 2)  -1);
+}
 
 ///采样阴影强度，返回区间[0,1]
 float SampleShadowStrength(float3 uvd){
+    #if X_SHADOW_PCF
+        float atten = 0;
+        if(_ShadowAAParams.x == 1){
+            atten = SampleShadowPCF(uvd);
+        }else if(_ShadowAAParams.x == 2){
+            atten = SampleShadowPCF3x3_4Tap_Fast(uvd);
+        }else if(_ShadowAAParams.x == 3){
+            atten = SampleShadowPCF3x3_4Tap(uvd);
+        }else if(_ShadowAAParams.x == 4){
+            atten = SampleShadowPCF5x5_9Tap(uvd);
+        }else{
+            atten = SampleShadowPCF(uvd);
+        }
+        return 1 - atten;
+    #else
+        float depth = UNITY_SAMPLE_TEX2D(_XMainShadowMap,uvd.xy);
+        #if UNITY_REVERSED_Z
+        //depth > z
+        return step(uvd.z,depth);
+        #else   
+        return step(depth,uvd.z);
+        #endif
 
-    float depth = UNITY_SAMPLE_TEX2D(_XMainShadowMap,uvd.xy);
-    #if UNITY_REVERSED_Z
-    //depth > z
-    return step(uvd.z,depth);
-    #else   
-    return step(depth,uvd.z);
     #endif
-
 }
 
 ///检查世界坐标是否位于主灯光的阴影之中(1表示不在阴影中，小于1表示在阴影中,数值代表了阴影衰减)

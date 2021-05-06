@@ -10,6 +10,14 @@ namespace  SRPLearn
         ReceiverPixelBiasAccurate,
     }
 
+    public enum ShadowAAType{
+        None = 0,
+        PCF1,
+        PCF3Fast,
+        PCF3,
+        PCF5,
+    }
+
     [System.Serializable]
     public class ShadowSetting 
     {
@@ -45,6 +53,8 @@ namespace  SRPLearn
         [SerializeField]
         private ShadowBiasType _shadowBiasType = ShadowBiasType.CasterVertexBias;
 
+        [SerializeField]
+        private ShadowAAType _shadowAAType = ShadowAAType.None;
 
         public int cascadeCount{
             get{
@@ -77,6 +87,12 @@ namespace  SRPLearn
         public float shadowDistance{
             get{
                 return _maxShadowDistance;
+            }
+        }
+
+        public ShadowAAType shadowAAType{
+            get{
+                return _shadowAAType;
             }
         }
     }  

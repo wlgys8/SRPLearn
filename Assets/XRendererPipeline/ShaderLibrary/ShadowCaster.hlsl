@@ -53,7 +53,7 @@ struct ShadowCasterVaryings
 ShadowCasterVaryings ShadowCasterVertex(ShadowCasterAttributes input)
 {
     ShadowCasterVaryings output;
-    #if _ShadowBiasCasterVertex
+    #if _ShadowBiasCasterVertex 
         float3 positionWS = TransformObjectToWorld(input.positionOS);
         float3 normalWS = TransformObjectToWorldNormal(input.normalOS);
         positionWS = ApplyShadowBias(positionWS,normalWS,_XMainLightDirection);

@@ -29,7 +29,8 @@
 
             HLSLPROGRAM
 
-            #pragma multi_compile _ShadowBiasReceiverPixel _ShadowBiasReceiverPixelAccurate
+            #pragma multi_compile _ _ShadowBiasReceiverPixel _ShadowBiasReceiverPixelAccurate
+            #pragma multi_compile _ X_SHADOW_PCF
             
             #pragma vertex PassVertex
             #pragma fragment PassFragment
@@ -51,7 +52,7 @@
 
             HLSLPROGRAM
 
-            #pragma multi_compile _ShadowBiasCasterVertex
+            #pragma multi_compile _ _ShadowBiasCasterVertex
 
             #include "../ShaderLibrary/ShadowCaster.hlsl"
 
