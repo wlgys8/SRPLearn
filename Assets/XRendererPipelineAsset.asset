@@ -20,5 +20,5 @@ MonoBehaviour:
     _cascadeRatio2: 20
     _cascadeRatio3: 30
     _cascadeRatio4: 40
-    _shadowBiasType: 0
+    _shadowBiasType: 1
     _shadowAAType: 4

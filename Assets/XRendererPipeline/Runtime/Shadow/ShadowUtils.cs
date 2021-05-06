@@ -21,5 +21,13 @@ namespace SRPLearn{
             }
             return 1;
         }
+
+        public static bool IsPerPixelBias(ShadowBiasType type){
+            switch(type){
+                case ShadowBiasType.ReceiverPixelBias:
+                return true;
+            }
+            return false;
+        }
     }
 }

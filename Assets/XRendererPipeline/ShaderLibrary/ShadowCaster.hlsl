@@ -3,22 +3,9 @@
 
 #include "./LightInput.hlsl"
 #include "./SpaceTransform.hlsl"
+#include "./ShadowBias.hlsl"
 
 #define ACCURATE_SHADOW_BIAS 0
-
-
-#if _ShadowBiasCasterVertex
-
-float4 _ShadowBias;
-
-float3 ApplyShadowBias(float3 positionWS,float3 normalWS,float3 lightDirection){
-    float scale = 1 - clamp(dot(normalWS,lightDirection),0,0.9);
-    positionWS -= lightDirection * _ShadowBias.x * scale;
-    positionWS -= normalWS * _ShadowBias.y * scale;
-    return positionWS;
-}
-
-#endif
 
 
 #if ACCURATE_SHADOW_BIAS
@@ -40,7 +27,7 @@ float3 ApplyShadowBias(float3 positionWS,float3 normalWS,float3 lightDirection){
 struct ShadowCasterAttributes
 {
     float4 positionOS   : POSITION;
-    #if _ShadowBiasCasterVertex
+    #if X_SHADOW_BIAS_CASTER_VERTEX
     float4 normalOS     : NORMAL;
     #endif
 };
@@ -53,10 +40,10 @@ struct ShadowCasterVaryings
 ShadowCasterVaryings ShadowCasterVertex(ShadowCasterAttributes input)
 {
     ShadowCasterVaryings output;
-    #if _ShadowBiasCasterVertex 
+    #if X_SHADOW_BIAS_CASTER_VERTEX 
         float3 positionWS = TransformObjectToWorld(input.positionOS);
         float3 normalWS = TransformObjectToWorldNormal(input.normalOS);
-        positionWS = ApplyShadowBias(positionWS,normalWS,_XMainLightDirection);
+        positionWS = ApplyShadowCasterBias(positionWS,normalWS,_XMainLightDirection);
         output.positionCS = TransformWorldToHClip(positionWS);
     #else
         output.positionCS = UnityObjectToClipPos(input.positionOS);

@@ -57,11 +57,11 @@ namespace SRPLearn
                 var shadowBiasData = this.CalculateShadowBias(resolution,ref matrixProj,ref lightData,ref shadowSetting);
                 _commandBuffer.SetGlobalVector(ShaderProperties.ShadowBias,new Vector4(shadowBiasData.depthBias,shadowBiasData.normalBias));
             }
-
             context.ExecuteCommandBuffer(_commandBuffer);
         }
 
-        private ShadowBiasData CalculateShadowBias(int shadowMapResolution,ref Matrix4x4 matrixProj,ref LightData lightData,ref ShadowSetting shadowSetting){
+
+        private float CalculateBiasScale(int shadowMapResolution,ref Matrix4x4 matrixProj,ref LightData lightData,ref ShadowSetting shadowSetting){
             //在SRP中，平行光的投影视锥体为一个Box, width == height
             var frustumSize = 2 / matrixProj.m00; 
             //通过frustumSize比shadowMapResolution，我们可以计算得到shadowMap上的单个像素，覆盖了多少的世界距离(平行光视角)。以此作为评估ShadowMap精确度的指标之一。
@@ -76,10 +76,12 @@ namespace SRPLearn
             //对shadowmap进行aa，要采样附近多个像素，因此bias也需要扩大
             var aaScale = ShadowUtils.GetSamplePixelSize(shadowSetting.shadowAAType);
             biasScale *= aaScale;
-
+            return biasScale;
+        }
+        private ShadowBiasData CalculateShadowBias(int shadowMapResolution,ref Matrix4x4 matrixProj,ref LightData lightData,ref ShadowSetting shadowSetting){
+            var biasScale = CalculateBiasScale(shadowMapResolution,ref matrixProj,ref lightData,ref shadowSetting);
             var depthBias = lightData.mainLight.light.shadowBias * biasScale; 
             var normalBias = lightData.mainLight.light.shadowNormalBias * biasScale;
-
             return new ShadowBiasData(){
                 depthBias = depthBias,
                 normalBias = normalBias
@@ -89,7 +91,6 @@ namespace SRPLearn
         private void ConfigShadowBiasKeywords(CommandBuffer commandBuffer,ref ShadowSetting shadowSetting){
             Utils.SetGlobalShaderKeyword(_commandBuffer,ShaderKeywords.ShadowBiasCasterVertex,shadowSetting.biasType == ShadowBiasType.CasterVertexBias);
             Utils.SetGlobalShaderKeyword(_commandBuffer,ShaderKeywords.ShadowBiasReceiverPixel,shadowSetting.biasType == ShadowBiasType.ReceiverPixelBias);
-            Utils.SetGlobalShaderKeyword(_commandBuffer,ShaderKeywords.ShadowBiasReceiverPixelAccurate,shadowSetting.biasType == ShadowBiasType.ReceiverPixelBiasAccurate);
         }
 
         //
@@ -100,13 +101,13 @@ namespace SRPLearn
             var shadowAA = setting.shadowAAType;
             switch(shadowAA){
                 case ShadowAAType.None:
-                commandBuffer.DisableShaderKeyword(ShaderKeywords.X_SHADOW_PCF);
+                commandBuffer.DisableShaderKeyword(ShaderKeywords.ShadowPCF);
                 break;
                 case ShadowAAType.PCF1:
-                commandBuffer.EnableShaderKeyword(ShaderKeywords.X_SHADOW_PCF);
+                commandBuffer.EnableShaderKeyword(ShaderKeywords.ShadowPCF);
                 break;
                 case ShadowAAType.PCF3Fast:
-                commandBuffer.EnableShaderKeyword(ShaderKeywords.X_SHADOW_PCF);
+                commandBuffer.EnableShaderKeyword(ShaderKeywords.ShadowPCF);
                 break;
             }
             if(shadowAA != ShadowAAType.None){
@@ -138,6 +139,7 @@ namespace SRPLearn
                 return;
             }
 
+            var perPixelBias = ShadowUtils.IsPerPixelBias(shadowSetting.biasType);
             this.ConfigPerCameraShadowSetting(context,ref shadowSetting);
 
             var mainLight = lightData.mainLight;
@@ -155,6 +157,8 @@ namespace SRPLearn
             var cascadeResolution = shadowMapResolution / cascadeAtlasGridSize;
 
             var cascadeOffsetInAtlas = new Vector2(0,0);
+
+            Vector4 cascadeBiasScales = Vector4.one;
 
             for(var i = 0; i < shadowSetting.cascadeCount; i ++){
 
@@ -185,6 +189,19 @@ namespace SRPLearn
                 _worldToCascadeShadowMapMatrices[i] = matrixWorldToShadowMapSpace;
                 _cascadeCullingSpheres[i] = shadowSplitData.cullingSphere;
 
+          
+                if(perPixelBias){
+                    var biasScale = this.CalculateBiasScale(shadowMapResolution,ref matrixProj,ref lightData,ref shadowSetting);
+                    if(i == 0){
+                        cascadeBiasScales.x = biasScale;
+                    }else if(i == 1){
+                        cascadeBiasScales.y = biasScale;
+                    }else if(i == 2){
+                        cascadeBiasScales.z = biasScale;
+                    }else{
+                        cascadeBiasScales.w = biasScale;
+                    }
+                }
             }
 
             //setup shader params
@@ -194,8 +211,10 @@ namespace SRPLearn
             Shader.SetGlobalVector(ShaderProperties.ShadowParams,new Vector4(lightComp.shadowBias,lightComp.shadowNormalBias,lightComp.shadowStrength,shadowSetting.cascadeCount));
             Shader.SetGlobalVector(ShaderProperties.ShadowMapSize,new Vector4(1.0f / shadowMapResolution,1.0f/shadowMapResolution,shadowMapResolution,shadowMapResolution));
             
-            Shader.SetGlobalVector(ShaderProperties.CascadeShadowBiasScale,
-            new Vector4(1,cascadeRatio.y / cascadeRatio.x,cascadeRatio.z/cascadeRatio.x,(1-cascadeRatio.x-cascadeRatio.y-cascadeRatio.z)/cascadeRatio.x));
+            if(perPixelBias){
+                Shader.SetGlobalVector(ShaderProperties.ShadowBias,new Vector4(lightComp.shadowBias,lightComp.shadowNormalBias));
+                Shader.SetGlobalVector(ShaderProperties.CascadeShadowBiasScale,cascadeBiasScales);
+            }   
         }
 
         public class ShadowMapTextureHandler{
@@ -320,10 +339,9 @@ namespace SRPLearn
 
         public static class ShaderKeywords{
   
-            public const string X_SHADOW_PCF = "X_SHADOW_PCF";
-            public const string ShadowBiasCasterVertex = "_ShadowBiasCasterVertex";
-            public const string ShadowBiasReceiverPixel = "_ShadowBiasReceiverPixel";
-            public const string ShadowBiasReceiverPixelAccurate = "_ShadowBiasReceiverPixelAccurate";
+            public const string ShadowPCF = "X_SHADOW_PCF";
+            public const string ShadowBiasCasterVertex = "X_SHADOW_BIAS_CASTER_VERTEX";
+            public const string ShadowBiasReceiverPixel = "X_SHADOW_BIAS_RECEIVER_PIXEL";
 
         }
     }

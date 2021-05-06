@@ -23,7 +23,7 @@ UNITY_DECLARE_TEX2D(_XMainShadowMap);
 #endif
 
 float4 _ShadowParams; //x is depthBias,y is normal bias,z is strength,w is cascadeCount
-float4 _CascadeShadowBiasScale;
+
 float4 _ShadowMapSize; //x = 1/shadowMap.width, y = 1/shadowMap.height,z = shadowMap.width,w = shadowMap.height
 
 

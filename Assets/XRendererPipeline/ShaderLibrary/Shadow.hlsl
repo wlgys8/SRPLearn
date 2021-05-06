@@ -5,12 +5,12 @@
 #include "./ShadowInput.hlsl"
 #include "./SpaceTransform.hlsl"
 #include "./ShadowTentFilter.hlsl"
+#include "./ShadowBias.hlsl"
 
 
 #define ACTIVED_CASCADE_COUNT _ShadowParams.w
 
-///将世界坐标转换到ShadowMapTexture空间,返回值的xy为uv，z为深度
-float3 WorldToShadowMapPos(float3 positionWS){
+int GetCascadeIndex(float3 positionWS){
     for(int i = 0; i < ACTIVED_CASCADE_COUNT; i ++){
         float4 cullingSphere = _XCascadeCullingSpheres[i];
         float3 center = cullingSphere.xyz;
@@ -18,20 +18,35 @@ float3 WorldToShadowMapPos(float3 positionWS){
         float3 d = (positionWS - center);
         //计算世界坐标是否在包围球内。
         if(dot(d,d) <= radiusSqr){
-            //如果是，就利用这一级别的Cascade来进行采样
-            float4x4 worldToCascadeMatrix = _XWorldToMainLightCascadeShadowMapSpaceMatrices[i];
-            float4 shadowMapPos = mul(worldToCascadeMatrix,float4(positionWS,1));
-            shadowMapPos /= shadowMapPos.w;
-            return shadowMapPos;
+            return i;
         }
     }
-    //表示超出ShadowMap. 不显示阴影。
-    #if UNITY_REVERSED_Z
-    return float3(0,0,1);
-    #else
-    return float3(0,0,0);
-    #endif
+    return - 1;
 }
+
+
+///将世界坐标转换到ShadowMapTexture空间,返回值的xy为uv，z为深度
+float3 WorldToShadowMapPos(float3 positionWS,int cascadeIndex){
+    if(cascadeIndex >= 0){
+        float4x4 worldToCascadeMatrix = _XWorldToMainLightCascadeShadowMapSpaceMatrices[cascadeIndex];
+        float4 shadowMapPos = mul(worldToCascadeMatrix,float4(positionWS,1));
+        shadowMapPos /= shadowMapPos.w;
+        return shadowMapPos;
+    }else{
+        //表示超出ShadowMap. 不显示阴影。
+        #if UNITY_REVERSED_Z
+        return float3(0,0,1);
+        #else
+        return float3(0,0,0);
+        #endif
+    }
+}
+
+float3 WorldToShadowMapPos(float3 positionWS){
+    int cascadeIndex = GetCascadeIndex(positionWS);
+    return WorldToShadowMapPos(cascadeIndex);
+}
+
 
 ///来用显示shadowmap投影在物体上的分辨率。返回1或0
 float DebugShadowResolution(float2 uv){
@@ -76,7 +91,11 @@ float GetMainLightShadowAtten(float3 positionWS,float3 normalWS){
         if(_ShadowParams.z == 0){
             return 1;
         }
-        float3 shadowMapPos = WorldToShadowMapPos(positionWS);
+        int cascadeIndex = GetCascadeIndex(positionWS);
+        #if X_SHADOW_BIAS_RECEIVER_PIXEL
+        positionWS = ApplyShadowBias(positionWS,normalWS,_XMainLightDirection,cascadeIndex);
+        #endif
+        float3 shadowMapPos = WorldToShadowMapPos(positionWS,cascadeIndex);
         float shadowStrength = SampleShadowStrength(shadowMapPos);
         return 1 - shadowStrength * _ShadowParams.z;
     #endif

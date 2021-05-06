@@ -7,7 +7,6 @@ namespace  SRPLearn
     public enum ShadowBiasType{
         CasterVertexBias,
         ReceiverPixelBias,
-        ReceiverPixelBiasAccurate,
     }
 
     public enum ShadowAAType{
