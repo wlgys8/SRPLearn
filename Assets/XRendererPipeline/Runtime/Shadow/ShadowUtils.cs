@@ -29,5 +29,17 @@ namespace SRPLearn{
             }
             return false;
         }
+
+        public static bool IsPCFEnabled(ShadowAAType shadowAA){
+            switch(shadowAA){
+                case ShadowAAType.None:
+                return false;
+                case ShadowAAType.PCF1:
+                case ShadowAAType.PCF3Fast:
+                case ShadowAAType.PCF5:
+                return true;
+            }
+            return false;
+        }
     }
 }

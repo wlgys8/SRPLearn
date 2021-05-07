@@ -93,25 +93,15 @@ namespace SRPLearn
             Utils.SetGlobalShaderKeyword(_commandBuffer,ShaderKeywords.ShadowBiasReceiverPixel,shadowSetting.biasType == ShadowBiasType.ReceiverPixelBias);
         }
 
-        //
         /// <summary>
-        /// 设置Shadow的相关参数，该设置是PerCamera的，综合了管线和MainLight的配置
+        /// 设置ShadowAA的相关参数，该设置是PerCamera的
         /// </summary>
         private void ConfigShadowAAParams(CommandBuffer commandBuffer,ShadowSetting setting){
             var shadowAA = setting.shadowAAType;
-            switch(shadowAA){
-                case ShadowAAType.None:
-                commandBuffer.DisableShaderKeyword(ShaderKeywords.ShadowPCF);
-                break;
-                case ShadowAAType.PCF1:
-                commandBuffer.EnableShaderKeyword(ShaderKeywords.ShadowPCF);
-                break;
-                case ShadowAAType.PCF3Fast:
-                commandBuffer.EnableShaderKeyword(ShaderKeywords.ShadowPCF);
-                break;
-            }
-            if(shadowAA != ShadowAAType.None){
-                commandBuffer.SetGlobalVector(ShadowCasterPass.ShaderProperties.ShadowAAParams,new Vector4((int)shadowAA,0,0,0));
+            var isPCFEnabled = ShadowUtils.IsPCFEnabled(shadowAA);
+            Utils.SetGlobalShaderKeyword(commandBuffer,ShaderKeywords.ShadowPCF,isPCFEnabled);
+            if(isPCFEnabled){
+                commandBuffer.SetGlobalVector(ShaderProperties.ShadowAAParams,new Vector4((int)shadowAA,0,0,0));
             }
         }
 
@@ -322,18 +312,31 @@ namespace SRPLearn
             public static readonly int CascadeCullingSpheres = Shader.PropertyToID("_XCascadeCullingSpheres");
 
             /// <summary>
-            /// x为depthBias,y为normalBias,z为shadowStrength,w为当前的cascade shadow数量
+            /// x为depthBias(depcrated),y为normalBias(depcrated),z为shadowStrength,w为当前的cascade shadow数量
             /// </summary>
             public static readonly int ShadowParams = Shader.PropertyToID("_ShadowParams");
 
             public static readonly int MainShadowMap = Shader.PropertyToID("_XMainShadowMap");
 
+            /// <summary>
+            /// _ShadowMapSize.xy分别为shadow map texture的 1/width和1/height, _ShadowMapSize.zw则为width和height
+            /// </summary>
             public static readonly int ShadowMapSize = Shader.PropertyToID("_ShadowMapSize");
 
+            /// <summary>
+            /// 在ShadowBiasType为ReceiverPixelBias时，xyzw分别存储了4级cascade shadow的bias scale
+            /// </summary>
             public static readonly int CascadeShadowBiasScale = Shader.PropertyToID("_CascadeShadowBiasScale");
 
+            /// <summary>
+            /// <para>当ShadowBiasType为ReceiverPixelBias时,_ShadowBias.xy直接保存了MainLight面板的depth和normal bias.需要配合_CascadeShadowBiasScale在shader中做最终的bias计算。</para>
+            /// <para>当ShadowBiasType为CasterVertexBias时, _ShadowBias.xy已经保存了最终计算出的depth和normal bias。shader中无需再处理。 </para>
+            /// </summary>
             public static readonly int ShadowBias = Shader.PropertyToID("_ShadowBias");
 
+            /// <summary>
+            /// _ShadowAAParams.x对应枚举ShadowAAType的值
+            /// </summary>
             public static readonly int ShadowAAParams = Shader.PropertyToID("_ShadowAAParams");
         }
 
