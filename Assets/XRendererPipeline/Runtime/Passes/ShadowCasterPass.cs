@@ -63,18 +63,19 @@ namespace SRPLearn
 
         private float CalculateBiasScale(int shadowMapResolution,ref Matrix4x4 matrixProj,ref LightData lightData,ref ShadowSetting shadowSetting){
             //在SRP中，平行光的投影视锥体为一个Box, width == height
-            var frustumSize = 2 / matrixProj.m00; 
-            //通过frustumSize比shadowMapResolution，我们可以计算得到shadowMap上的单个像素，覆盖了多少的世界距离(平行光视角)。以此作为评估ShadowMap精确度的指标之一。
-            var texelResolution = frustumSize / shadowMapResolution;
+            var halfFrustumSize = 1 / matrixProj.m00; 
 
-            //由于Light面板的bias可调节范围只有0~2,不够用，因此这里*5，使其可以覆盖0~10。
-            float biasScale = 5;
+            //通过frustumSize比shadowMapResolution，我们可以计算得到shadowMap上的单个像素，覆盖了多少的世界距离(平行光视角)。以此作为评估ShadowMap精确度的指标之一。
+            var halfTexelResolution = halfFrustumSize / shadowMapResolution;
+
+            //由于Light面板的bias可调节范围只有0~2,不够用，因此这里*10，使其可以覆盖0~20。
+            float biasScale = 10;
 
             //shadowMap精度越低，对应的bias要越大
-            biasScale *= texelResolution;
+            biasScale *= halfTexelResolution;
 
             //对shadowmap进行aa，要采样附近多个像素，因此bias也需要扩大
-            var aaScale = ShadowUtils.GetSamplePixelSize(shadowSetting.shadowAAType);
+            var aaScale = ShadowUtils.GetCeilSampleKernelRadius(shadowSetting.shadowAAType);
             biasScale *= aaScale;
             return biasScale;
         }
@@ -181,7 +182,7 @@ namespace SRPLearn
 
           
                 if(perPixelBias){
-                    var biasScale = this.CalculateBiasScale(shadowMapResolution,ref matrixProj,ref lightData,ref shadowSetting);
+                    var biasScale = this.CalculateBiasScale(cascadeResolution,ref matrixProj,ref lightData,ref shadowSetting);
                     if(i == 0){
                         cascadeBiasScales.x = biasScale;
                     }else if(i == 1){

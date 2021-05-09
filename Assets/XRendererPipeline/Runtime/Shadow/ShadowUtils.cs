@@ -6,18 +6,18 @@ namespace SRPLearn{
     public class ShadowUtils
     {
         
-        public static int GetSamplePixelSize(ShadowAAType shadowAA){
+        public static int GetCeilSampleKernelRadius(ShadowAAType shadowAA){
             switch(shadowAA){
                 case ShadowAAType.None:
                 return 1;
-                case ShadowAAType.PCF1:
+                case ShadowAAType.PCF1: //1 + ceil(0.5)
                 return 2;
-                case ShadowAAType.PCF3Fast:
+                case ShadowAAType.PCF3Fast:// 1 + ceil(1)
+                return 2;
+                case ShadowAAType.PCF3: //1 + ceil(1.5)
                 return 3;
-                case ShadowAAType.PCF3:
+                case ShadowAAType.PCF5: //1 + ceil(2.5)
                 return 4;
-                case ShadowAAType.PCF5:
-                return 6;
             }
             return 1;
         }
@@ -36,6 +36,7 @@ namespace SRPLearn{
                 return false;
                 case ShadowAAType.PCF1:
                 case ShadowAAType.PCF3Fast:
+                case ShadowAAType.PCF3:
                 case ShadowAAType.PCF5:
                 return true;
             }

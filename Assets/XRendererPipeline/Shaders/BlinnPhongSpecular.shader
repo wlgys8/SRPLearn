@@ -61,5 +61,26 @@
         
             ENDHLSL
         }
+
+        Pass
+        {
+            Name "ShadowDebug"
+            Tags{"LightMode" = "ShadowDebug"}
+
+            ZWrite Off
+            ZTest LEqual
+            Cull Back
+            Blend SrcAlpha OneMinusSrcAlpha
+
+
+            HLSLPROGRAM
+
+            #include "../ShaderLibrary/ShadowDebug.hlsl"
+
+            #pragma vertex ShadowDebugVertex
+            #pragma fragment ShadowDebugFragment
+        
+            ENDHLSL
+        }
     }
 }

@@ -7,10 +7,14 @@ namespace SRPLearn{
     public class RenderObjectPass
     {
         
-        private ShaderTagId _shaderTag = new ShaderTagId("XForwardBase");
+        private ShaderTagId _shaderTag;
         private bool _isTransparent = false;
-        public RenderObjectPass(bool transparent){
+
+        public RenderObjectPass(bool transparent,string lightModeTagId){
+            _shaderTag = new ShaderTagId(lightModeTagId);
             _isTransparent = transparent;
+        }
+        public RenderObjectPass(bool transparent):this(transparent,"XForwardBase"){
         }
         
         public void Execute(ScriptableRenderContext context, Camera camera,ref CullingResults cullingResults){

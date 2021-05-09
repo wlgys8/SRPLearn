@@ -55,6 +55,9 @@ namespace  SRPLearn
         [SerializeField]
         private ShadowAAType _shadowAAType = ShadowAAType.None;
 
+        [SerializeField]
+        private bool _debugShadowResolution = false;
+
         public int cascadeCount{
             get{
                 return _shadowCascadeCount;
@@ -92,6 +95,12 @@ namespace  SRPLearn
         public ShadowAAType shadowAAType{
             get{
                 return _shadowAAType;
+            }
+        }
+
+        public bool isShadowResolutionDebugOn{
+            get{
+                return _debugShadowResolution;
             }
         }
     }  

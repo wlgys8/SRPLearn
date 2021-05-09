@@ -19,7 +19,8 @@ Texture2D _XMainShadowMap;
 SamplerComparisonState sampler_XMainShadowMap;
 half4 _ShadowAAParams; //x is PCF tap count, current support 1 & 4
 #else
-UNITY_DECLARE_TEX2D(_XMainShadowMap);
+Texture2D _XMainShadowMap;
+SamplerState sampler_XMainShadowMap_point_clamp;
 #endif
 
 float4 _ShadowParams; //x is depthBias,y is normal bias,z is strength,w is cascadeCount

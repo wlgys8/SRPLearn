@@ -45,6 +45,7 @@ namespace SRPLearn{
         private RenderObjectPass _transparentPass = new RenderObjectPass(true);
 
         private ShadowCasterPass _shadowCastPass = new ShadowCasterPass();
+        private RenderObjectPass _shadowDebugPass = new RenderObjectPass(false,"ShadowDebug");
         private CommandBuffer _command = new CommandBuffer();
 
 
@@ -102,6 +103,11 @@ namespace SRPLearn{
 
             //透明物体渲染
             _transparentPass.Execute(context,camera,ref cullingResults);
+
+            if(this._setting.shadowSetting.isShadowResolutionDebugOn){
+                //阴影调试
+                _shadowDebugPass.Execute(context,camera,ref cullingResults);
+            }
 
         }
 

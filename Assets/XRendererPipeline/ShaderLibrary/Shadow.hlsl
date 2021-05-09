@@ -44,16 +44,10 @@ float3 WorldToShadowMapPos(float3 positionWS,int cascadeIndex){
 
 float3 WorldToShadowMapPos(float3 positionWS){
     int cascadeIndex = GetCascadeIndex(positionWS);
-    return WorldToShadowMapPos(cascadeIndex);
+    return WorldToShadowMapPos(positionWS,cascadeIndex);
 }
 
 
-///来用显示shadowmap投影在物体上的分辨率。返回1或0
-float DebugShadowResolution(float2 uv){
-    float2 texelCoord = _ShadowMapSize.zw * uv;
-    float2 texelOriginal = floor(texelCoord);
-    return abs((texelOriginal.x % 2 + texelOriginal.y % 2)  -1);
-}
 
 ///采样阴影强度，返回区间[0,1]
 float SampleShadowStrength(float3 uvd){
@@ -72,7 +66,8 @@ float SampleShadowStrength(float3 uvd){
         }
         return 1 - atten;
     #else
-        float depth = UNITY_SAMPLE_TEX2D(_XMainShadowMap,uvd.xy);
+        float depth = _XMainShadowMap.Sample(sampler_XMainShadowMap_point_clamp,uvd.xy);
+        // float depth = UNITY_SAMPLE_TEX2D(_XMainShadowMap,uvd.xy);
         #if UNITY_REVERSED_Z
         //depth > z
         return step(uvd.z,depth);
