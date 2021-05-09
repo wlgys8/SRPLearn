@@ -18,5 +18,7 @@ Unity版本: 2019.4.16
 - PCF软阴影
   - [理论部分 - PCF优化采样算法](https://github.com/wlgys8/SRPLearn/wiki/PCFSampleOptimize)
   - [SRP实现](https://github.com/wlgys8/SRPLearn/wiki/ShadowPCF)
-- [自适应的Shadow Bias]()
+- Shadow Bias
+  - [理论部分 - 自适应Bias算法](https://github.com/wlgys8/SRPLearn/wiki/ShadowBias)
+  - SRP实现
 - 待补充
