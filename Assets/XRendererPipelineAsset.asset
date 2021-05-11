@@ -23,3 +23,6 @@ MonoBehaviour:
     _shadowBiasType: 1
     _shadowAAType: 4
     _debugShadowResolution: 0
+  _antiAlias:
+    antiAliasType: 1
+    msaaLevel: 2

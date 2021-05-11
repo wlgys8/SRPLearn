@@ -16,6 +16,9 @@ namespace SRPLearn{
         [SerializeField]
         private ShadowSetting _shadowSetting = new ShadowSetting();
 
+        [SerializeField]
+        private AntiAliasSetting _antiAlias = new AntiAliasSetting();
+
         public bool enableSrpBatcher{
             get{
                 return _srpBatcher;
@@ -25,6 +28,12 @@ namespace SRPLearn{
         public ShadowSetting shadowSetting{
             get{
                 return _shadowSetting;
+            }
+        }
+
+        public AntiAliasSetting antiAliasSetting{
+            get{
+                return _antiAlias;
             }
         }
 
@@ -47,9 +56,14 @@ namespace SRPLearn{
         private ShadowCasterPass _shadowCastPass = new ShadowCasterPass();
         private RenderObjectPass _shadowDebugPass = new RenderObjectPass(false,"ShadowDebug");
         private CommandBuffer _command = new CommandBuffer();
-
-
         private XRendererPipelineAsset _setting;
+
+        private BlitPass _blitPass = new BlitPass();
+
+        private RenderTargetIdentifier _currentColorTarget;
+        private RenderTargetIdentifier _currentDepthTarget;
+
+
         public XRenderPipeline(XRendererPipelineAsset setting){
             GraphicsSettings.useScriptableRenderPipelineBatching = setting.enableSrpBatcher;
             _command.name = "RenderCamera";
@@ -71,6 +85,21 @@ namespace SRPLearn{
             _command.Clear();
             _command.SetRenderTarget(BuiltinRenderTextureType.CameraTarget,BuiltinRenderTextureType.CameraTarget);
             _command.ClearRenderTarget(true,true,camera.backgroundColor);
+            context.ExecuteCommandBuffer(_command);
+        }
+     
+
+        private void ConfigRenderTarget(ScriptableRenderContext context,ref CameraRenderDescription cameraRenderDescription){
+            _command.Clear();
+            if(cameraRenderDescription.requireTempRT){
+                _currentColorTarget = RenderTextureManager.AcquireColorTexture(_command,ref cameraRenderDescription);
+                _currentDepthTarget = _currentColorTarget;
+            }else{
+                _currentColorTarget = BuiltinRenderTextureType.CameraTarget;
+                _currentDepthTarget = _currentColorTarget;
+            }
+            _command.SetRenderTarget(_currentColorTarget,_currentDepthTarget);
+            _command.ClearRenderTarget(true,true,cameraRenderDescription.camera.backgroundColor);
             context.ExecuteCommandBuffer(_command);
         }
 
@@ -95,8 +124,11 @@ namespace SRPLearn{
 
             //重设摄像机参数
             context.SetupCameraProperties(camera);
-            //清除摄像机背景
-            ClearCameraTarget(context,camera);
+
+            var cameraDescription = Utils.GetCameraRenderDescription(camera,_setting);
+
+            //重新配置渲染目标
+            ConfigRenderTarget(context,ref cameraDescription);
 
             //非透明物体渲染
             _opaquePass.Execute(context,camera,ref cullingResults);
@@ -109,6 +141,17 @@ namespace SRPLearn{
                 _shadowDebugPass.Execute(context,camera,ref cullingResults);
             }
 
+            //final blit
+            if(_currentColorTarget != BuiltinRenderTextureType.CameraTarget){
+                _blitPass.Config(_currentColorTarget,BuiltinRenderTextureType.CameraTarget);
+                _blitPass.Execute(context);
+            }
+
+            _command.Clear();
+            RenderTextureManager.ReleaseAllTempRT(_command);
+            context.ExecuteCommandBuffer(_command);
+
+            OnCameraRenderingEnd(context,camera);
         }
 
         private DrawingSettings CreateDrawSettings(Camera camera){
@@ -119,6 +162,13 @@ namespace SRPLearn{
             drawSetting.perObjectData |= PerObjectData.LightData;
             drawSetting.perObjectData |= PerObjectData.LightIndices;
             return drawSetting;
+        }
+
+        /// <summary>
+        /// 单个摄像机渲染结束时调用
+        /// </summary>
+        private void OnCameraRenderingEnd(ScriptableRenderContext context,Camera camera){
+         
         }
 
     }

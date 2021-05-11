@@ -1,6 +1,8 @@
 #ifndef COMMON_INPUT_INCLUDE
 #define COMMON_INPUT_INCLUDE
 
+#include "HLSLSupport.cginc"
+
 float3 _WorldSpaceCameraPos;
 float4x4 unity_MatrixVP;
 

@@ -14,5 +14,19 @@ namespace SRPLearn{
                 commandBuffer.DisableShaderKeyword(keyword);
             }
         }
+
+
+        public static CameraRenderDescription GetCameraRenderDescription(Camera camera,XRendererPipelineAsset asset){
+            var aa = asset.antiAliasSetting;
+            CameraRenderDescription des = new CameraRenderDescription(camera);
+            bool msaaEnable = aa.antiAliasType == AAType.MSAA && camera.allowMSAA;
+            des.requireTempRT = msaaEnable;
+            if(msaaEnable){
+                des.msaaLevel = aa.msaaLevel;
+            }
+            return des;
+        }
+
+
     }
 }
