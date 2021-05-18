@@ -21,4 +21,9 @@ Unity版本: 2019.4.16
 - Shadow Bias
   - [理论部分 - 自适应Bias算法](https://github.com/wlgys8/SRPLearn/wiki/ShadowBias)
   - SRP实现
+- 抗锯齿
+  - 几种抗锯齿方式总结
+  - [FXAA详细算法](https://github.com/wlgys8/SRPLearn/wiki/FXAA)
+  - MSAA抗锯齿SRP实现
+  - FXAA抗锯齿SRP实现
 - 待补充
