@@ -7,7 +7,9 @@ Shader "Hidden/SRPLearn/Blit"
 
         HLSLINCLUDE
         #pragma enable_cbuffer
+        
         #include "../ShaderLibrary/SpaceTransform.hlsl"
+        #include "../ShaderLibrary/FXAA.hlsl"
         ENDHLSL
 
         Pass
@@ -22,6 +24,9 @@ Shader "Hidden/SRPLearn/Blit"
 
             #pragma vertex Vertex
             #pragma fragment Fragment
+            #pragma shader_feature __ FXAA_V1 FXAA_QUALITY FXAA_CONSOLE
+            #pragma shader_feature __ FXAA_DEBUG_EDGE
+            #pragma shader_feature __ FXAA_DEBUG_CULL_PASS
 
 
             struct Attributes
@@ -51,8 +56,16 @@ Shader "Hidden/SRPLearn/Blit"
 
             half4 Fragment(Varyings input) : SV_Target
             {
-                half4 col = _BlitTex.Sample(sampler_BlitTex, input.uv);
-                return col;
+                
+                #if FXAA_ENABLE
+                return FXAA(_BlitTex,input.uv);
+                #else
+                float2 coord = _ScreenParams.xy * input.uv;
+
+                return _BlitTex.SampleLevel(sampler_BlitTex,input.uv,0);
+                // return _BlitTex.Sample(sampler_BlitTex, input.uv);
+                #endif
+                
             }
             ENDHLSL
         }

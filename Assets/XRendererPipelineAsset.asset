@@ -24,5 +24,14 @@ MonoBehaviour:
     _shadowAAType: 4
     _debugShadowResolution: 0
   _antiAlias:
-    antiAliasType: 1
+    antiAliasType: 3
     msaaLevel: 2
+    fXAADebug:
+      debugEdge: 0
+      cullPassThrough: 0
+    fXAAConfig:
+      absoluteLumaThreshold: 0.08
+      relativeLumaThreshold: 0.25
+      consoleCharpness: 4
+      qualitySubPixTrim: 0
+      qualitySubPixCap: 1

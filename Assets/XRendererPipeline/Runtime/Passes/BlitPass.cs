@@ -15,6 +15,10 @@ namespace SRPLearn{
              _command.name = "Blit";
         }
 
+        public BlitPass(Material material):this(){
+            _blitMaterial = material;
+        }
+
         public void Config(RenderTargetIdentifier source,RenderTargetIdentifier target){
             _source = source;
             _target = target;

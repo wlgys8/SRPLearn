@@ -5,6 +5,7 @@
 
 float3 _WorldSpaceCameraPos;
 float4x4 unity_MatrixVP;
+float4 _ScreenParams;
 
 #define TRANSFORM_TEX(tex, name) ((tex.xy) * name##_ST.xy + name##_ST.zw)
 
@@ -19,6 +20,8 @@ half4 unity_LightData;
 half4 unity_LightIndices[2];
 
 CBUFFER_END
+
+
 
 
 

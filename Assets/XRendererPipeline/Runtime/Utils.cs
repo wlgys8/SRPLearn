@@ -20,7 +20,7 @@ namespace SRPLearn{
             var aa = asset.antiAliasSetting;
             CameraRenderDescription des = new CameraRenderDescription(camera);
             bool msaaEnable = aa.antiAliasType == AAType.MSAA && camera.allowMSAA;
-            des.requireTempRT = msaaEnable;
+            des.requireTempRT = msaaEnable || aa.antiAliasType == AAType.FXAAQuality || aa.antiAliasType == AAType.FXAAConsole || aa.antiAliasType == AAType.FXAAV1;
             if(msaaEnable){
                 des.msaaLevel = aa.msaaLevel;
             }

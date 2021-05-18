@@ -80,15 +80,6 @@ namespace SRPLearn{
             context.Submit();
         }
 
-
-        private void ClearCameraTarget(ScriptableRenderContext context,Camera camera){
-            _command.Clear();
-            _command.SetRenderTarget(BuiltinRenderTextureType.CameraTarget,BuiltinRenderTextureType.CameraTarget);
-            _command.ClearRenderTarget(true,true,camera.backgroundColor);
-            context.ExecuteCommandBuffer(_command);
-        }
-     
-
         private void ConfigRenderTarget(ScriptableRenderContext context,ref CameraRenderDescription cameraRenderDescription){
             _command.Clear();
             if(cameraRenderDescription.requireTempRT){
@@ -101,6 +92,10 @@ namespace SRPLearn{
             _command.SetRenderTarget(_currentColorTarget,_currentDepthTarget);
             _command.ClearRenderTarget(true,true,cameraRenderDescription.camera.backgroundColor);
             context.ExecuteCommandBuffer(_command);
+        }
+
+        private void ConfigShaderPerCamera(ScriptableRenderContext context){
+            AntiAliasUtil.ConfigShaderPerCamera(context,_command,_setting.antiAliasSetting);
         }
 
         private void RenderPerCamera(ScriptableRenderContext context,Camera camera){
@@ -129,6 +124,9 @@ namespace SRPLearn{
 
             //重新配置渲染目标
             ConfigRenderTarget(context,ref cameraDescription);
+
+            //设置keywords
+            ConfigShaderPerCamera(context);
 
             //非透明物体渲染
             _opaquePass.Execute(context,camera,ref cullingResults);

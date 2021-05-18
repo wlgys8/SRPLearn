@@ -9,8 +9,16 @@ namespace SRPLearn{
         private static int _colorTexture = Shader.PropertyToID("ColorTexture");
 
         public static RenderTargetIdentifier AcquireColorTexture(CommandBuffer commandBuffer,ref CameraRenderDescription cameraRenderDescription){
-            commandBuffer.GetTemporaryRT(_colorTexture,cameraRenderDescription.pixelWidth,cameraRenderDescription.pixelHeight,
-            16,FilterMode.Point,RenderTextureFormat.ARGB32,RenderTextureReadWrite.Default,cameraRenderDescription.msaaLevel,false);
+            RenderTextureDescriptor renderTextureDescriptor = new RenderTextureDescriptor(cameraRenderDescription.pixelWidth,cameraRenderDescription.pixelHeight);
+            renderTextureDescriptor.depthBufferBits = 16;
+            renderTextureDescriptor.sRGB = true;
+            renderTextureDescriptor.colorFormat = RenderTextureFormat.ARGB32;
+            renderTextureDescriptor.msaaSamples = cameraRenderDescription.msaaLevel;
+            renderTextureDescriptor.enableRandomWrite = false;
+
+            commandBuffer.GetTemporaryRT(_colorTexture,renderTextureDescriptor,FilterMode.Bilinear);
+
+            // RenderTextureMemoryless.
             return _colorTexture;
         }
 
