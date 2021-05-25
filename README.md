@@ -22,8 +22,8 @@ Unity版本: 2019.4.16
   - [理论部分 - 自适应Bias算法](https://github.com/wlgys8/SRPLearn/wiki/ShadowBias)
   - SRP实现
 - 抗锯齿
-  - 几种抗锯齿方式总结
+  - [几种抗锯齿方式总结](https://github.com/wlgys8/SRPLearn/wiki/AntiAliasSummary)
   - [FXAA详细算法](https://github.com/wlgys8/SRPLearn/wiki/FXAA)
-  - MSAA抗锯齿SRP实现
-  - FXAA抗锯齿SRP实现
+  - [MSAA抗锯齿SRP实现](https://github.com/wlgys8/SRPLearn/wiki/MSAA_Implement)
+  - [FXAA抗锯齿SRP实现](https://github.com/wlgys8/SRPLearn/wiki/FXAA_Implement)
 - 待补充
