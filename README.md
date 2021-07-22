@@ -26,4 +26,5 @@ Unity版本: 2019.4.16
   - [FXAA详细算法](https://github.com/wlgys8/SRPLearn/wiki/FXAA)
   - [MSAA抗锯齿SRP实现](https://github.com/wlgys8/SRPLearn/wiki/MSAA_Implement)
   - [FXAA抗锯齿SRP实现](https://github.com/wlgys8/SRPLearn/wiki/FXAA_Implement)
+- [CSM阴影混合过渡](https://github.com/wlgys8/SRPLearn/wiki/CSMBlend)
 - 待补充
