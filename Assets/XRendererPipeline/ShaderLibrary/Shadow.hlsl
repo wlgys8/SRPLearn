@@ -7,9 +7,13 @@
 #include "./ShadowTentFilter.hlsl"
 #include "./ShadowBias.hlsl"
 
-
 #define ACTIVED_CASCADE_COUNT _ShadowParams.w
 
+struct CascadeShadowData{
+    int cascadeIndex;
+    float blend;
+};
+ 
 int GetCascadeIndex(float3 positionWS){
     for(int i = 0; i < ACTIVED_CASCADE_COUNT; i ++){
         float4 cullingSphere = _XCascadeCullingSpheres[i];
@@ -21,7 +25,61 @@ int GetCascadeIndex(float3 positionWS){
             return i;
         }
     }
-    return - 1;
+    return -1;
+}
+
+CascadeShadowData GetCascadeShadowData(float3 positionWS,float3 normalWS){
+    CascadeShadowData data;
+    data.blend = 0;
+    data.cascadeIndex = -1;
+    float3 viewVector = _WorldSpaceCameraPos - positionWS;
+    float3 cameraForward = _WorldSpaceCameraForward;
+    float projOnForward = - dot(viewVector,cameraForward);
+    if(projOnForward > SHADOW_DISTANCE){
+        //超出最远阴影距离，不渲染阴影
+        return data;
+    }
+    
+    //面与摄像机朝向的夹角对其在屏幕上的投影距离也有影响
+    // float nf = min(3,1 / abs(dot(cameraForwardUnit,normalWS)));
+    
+    
+    float blendDist = 0; 
+    float lastSphereRadius = 0;
+    for(int i = 0; i < ACTIVED_CASCADE_COUNT; i ++){
+        float4 cullingSphere = _XCascadeCullingSpheres[i];
+        if(i < ACTIVED_CASCADE_COUNT - 1){
+            float3 center = cullingSphere.xyz;
+            float distToCenter = length(positionWS - center);
+            float distToSurface = cullingSphere.w - distToCenter;
+            //计算世界坐标是否在包围球内。
+            if(distToSurface > 0){
+                //blendDist应当与距离有关，像素距离摄像机越远，应当给予越长的距离用来混合
+                blendDist = CASCADE_SHADOW_BLEND_DIST * projOnForward;
+                float3 centerToPos = positionWS - center;
+                if(dot(centerToPos,cameraForward) > 0){
+                    //如果两级CSM之间的Bias差距越大，那么也需要越长的距离用来混合
+                    float deltaBiasScale = 1 + abs(_CascadeShadowBiasScale[i + 1] - _CascadeShadowBiasScale[i]);
+                    blendDist *= deltaBiasScale;
+                    //最大混合距离不超过CSM包围盒半径的一半
+                    blendDist = min(cullingSphere.w * 0.5,blendDist);
+                    data.blend =  saturate(1 - distToSurface/blendDist);
+                    data.cascadeIndex = i;
+                }else{
+                    data.cascadeIndex = i;
+                    data.blend = 0;
+                }
+                return data;
+            }
+        }else{
+            blendDist = CASCADE_SHADOW_BLEND_DIST * projOnForward;
+            blendDist =  min(cullingSphere.w * 0.5,blendDist);
+            data.cascadeIndex = i;
+            data.blend = saturate(1 - (SHADOW_DISTANCE - projOnForward) / blendDist);
+        }
+        lastSphereRadius = cullingSphere.w;
+    }
+    return data;
 }
 
 
@@ -86,12 +144,45 @@ float GetMainLightShadowAtten(float3 positionWS,float3 normalWS){
         if(_ShadowParams.z == 0){
             return 1;
         }
-        int cascadeIndex = GetCascadeIndex(positionWS);
-        #if X_SHADOW_BIAS_RECEIVER_PIXEL
-        positionWS = ApplyShadowBias(positionWS,normalWS,_XMainLightDirection,cascadeIndex);
+
+        #if X_CSM_BLEND
+            CascadeShadowData cascadeData = GetCascadeShadowData(positionWS,normalWS);
+            int cascadeIndex = cascadeData.cascadeIndex;
+            float blend = cascadeData.blend;
+
+            #if X_SHADOW_BIAS_RECEIVER_PIXEL
+            float3 biasedPositionWS = ApplyShadowBias(positionWS,normalWS,_XMainLightDirection,cascadeIndex);
+            #else
+            float3 biasedPositionWS = positionWS;
+            #endif
+            float3 shadowMapPos = WorldToShadowMapPos(biasedPositionWS,cascadeIndex);
+            float shadowStrength = SampleShadowStrength(shadowMapPos);
+
+            if(blend > 0 ){
+                if(cascadeIndex < ACTIVED_CASCADE_COUNT - 1){
+                    #if X_SHADOW_BIAS_RECEIVER_PIXEL
+                    biasedPositionWS = ApplyShadowBias(positionWS,normalWS,_XMainLightDirection,cascadeIndex + 1);
+                    #else
+                    biasedPositionWS = positionWS;
+                    #endif
+                    shadowMapPos = WorldToShadowMapPos(biasedPositionWS,cascadeIndex + 1);
+                    float s2 = SampleShadowStrength(shadowMapPos);
+                    shadowStrength = lerp(shadowStrength,s2,blend);
+                }else{
+                    shadowStrength = lerp(shadowStrength,0,blend);
+                }
+            }
+        #else
+            int cascadeIndex = GetCascadeIndex(positionWS);
+            if(cascadeIndex < 0){
+                return 1;
+            }
+            #if X_SHADOW_BIAS_RECEIVER_PIXEL
+            positionWS = ApplyShadowBias(positionWS,normalWS,_XMainLightDirection,cascadeIndex);
+            #endif
+            float3 shadowMapPos = WorldToShadowMapPos(positionWS,cascadeIndex);
+            float shadowStrength = SampleShadowStrength(shadowMapPos);
         #endif
-        float3 shadowMapPos = WorldToShadowMapPos(positionWS,cascadeIndex);
-        float shadowStrength = SampleShadowStrength(shadowMapPos);
         return 1 - shadowStrength * _ShadowParams.z;
     #endif
 }

@@ -3,9 +3,17 @@
 
 #include "HLSLSupport.cginc"
 
+//Unity 内置变量
 float3 _WorldSpaceCameraPos;
+float4x4 unity_MatrixV;
+float4x4 unity_MatrixInvV;
 float4x4 unity_MatrixVP;
+float4x4 unity_MatrixInvVP;
 float4 _ScreenParams;
+
+//管线变量
+float3 _WorldSpaceCameraForward;
+
 
 #define TRANSFORM_TEX(tex, name) ((tex.xy) * name##_ST.xy + name##_ST.zw)
 

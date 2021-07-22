@@ -14,17 +14,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _srpBatcher: 1
   _shadowSetting:
-    _maxShadowDistance: 140
+    _maxShadowDistance: 100
     _shadowCascadeCount: 4
-    _cascadeRatio1: 10
-    _cascadeRatio2: 20
-    _cascadeRatio3: 30
-    _cascadeRatio4: 40
+    _cascadeRatio1: 1
+    _cascadeRatio2: 2
+    _cascadeRatio3: 4
+    _cascadeRatio4: 8
+    _enableCSMBlend: 1
+    _cascadeShadowBlendDist: 0.1
     _shadowBiasType: 1
     _shadowAAType: 4
     _debugShadowResolution: 0
+    _debugShadowCascade: 0
+    _debugShadowResolutionAlpha: 0.162
+    _drawCascadeCullingSphere: 0
+    _cascadeBlendCullingFactor: 0
   _antiAlias:
-    antiAliasType: 3
+    antiAliasType: 0
     msaaLevel: 2
     fXAADebug:
       debugEdge: 0

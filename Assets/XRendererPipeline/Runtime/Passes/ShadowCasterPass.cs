@@ -114,10 +114,12 @@ namespace SRPLearn
         }
 
         public void Execute(ScriptableRenderContext context,ref ShadowCasterSetting setting){
-
+            
+            
             ref var lightData = ref setting.lightData;
             ref var cullingResults = ref setting.cullingResults;
             var shadowSetting = setting.shadowSetting;
+            var camera = setting.camera;
 
             if(!lightData.HasMainLight()){
                 //表示场景无主灯光
@@ -151,6 +153,15 @@ namespace SRPLearn
 
             Vector4 cascadeBiasScales = Vector4.one;
 
+            var enableCSMDebug = false;
+            #if UNITY_EDITOR
+            if(camera.cameraType == CameraType.Game){
+                if(shadowSetting.drawCascadeCullingSphere){
+                    enableCSMDebug = true;
+                    ShadowDebug.SetCascadeCount(camera.GetInstanceID(),shadowSetting.cascadeCount);
+                }
+            }
+            #endif
             for(var i = 0; i < shadowSetting.cascadeCount; i ++){
 
                 var x = i % cascadeAtlasGridSize;
@@ -162,7 +173,7 @@ namespace SRPLearn
                 //get light matrixView,matrixProj,shadowSplitData
                 cullingResults.ComputeDirectionalShadowMatricesAndCullingPrimitives(lightData.mainLightIndex,i,shadowSetting.cascadeCount,
                 cascadeRatio,cascadeResolution,lightComp.shadowNearPlane,out var matrixView,out var matrixProj,out var shadowSplitData);
-                
+                shadowSplitData.shadowCascadeBlendCullingFactor = shadowSetting.cascadeBlendCullingFactor;
                 //generate ShadowDrawingSettings
                 ShadowDrawingSettings shadowDrawSetting = new ShadowDrawingSettings(cullingResults,lightData.mainLightIndex);
                 shadowDrawSetting.splitData = shadowSplitData;
@@ -193,13 +204,19 @@ namespace SRPLearn
                         cascadeBiasScales.w = biasScale;
                     }
                 }
+
+                if(enableCSMDebug){
+                    ShadowDebug.SetCSMViewProjMatrix(camera.GetInstanceID(),i,matrixView,matrixProj);
+                    ShadowDebug.SetCSMCullingSpheres(camera.GetInstanceID(),i,shadowSplitData.cullingSphere);
+                }
             }
 
             //setup shader params
             Shader.SetGlobalMatrixArray(ShaderProperties.WorldToMainLightCascadeShadowMapSpaceMatrices,_worldToCascadeShadowMapMatrices);
             Shader.SetGlobalVectorArray(ShaderProperties.CascadeCullingSpheres,_cascadeCullingSpheres);
+
             //将阴影的一些数据传入Shader
-            Shader.SetGlobalVector(ShaderProperties.ShadowParams,new Vector4(lightComp.shadowBias,lightComp.shadowNormalBias,lightComp.shadowStrength,shadowSetting.cascadeCount));
+            Shader.SetGlobalVector(ShaderProperties.ShadowParams,new Vector4(shadowSetting.cascadeShadowBlendDist,shadowSetting.shadowDistance,lightComp.shadowStrength,shadowSetting.cascadeCount));
             Shader.SetGlobalVector(ShaderProperties.ShadowMapSize,new Vector4(1.0f / shadowMapResolution,1.0f/shadowMapResolution,shadowMapResolution,shadowMapResolution));
             
             if(perPixelBias){
@@ -289,6 +306,8 @@ namespace SRPLearn
             public ShadowSetting shadowSetting; 
             public CullingResults cullingResults;
             public LightData lightData;
+
+            public Camera camera;
         }
 
         private struct ShadowBiasData{
@@ -313,7 +332,7 @@ namespace SRPLearn
             public static readonly int CascadeCullingSpheres = Shader.PropertyToID("_XCascadeCullingSpheres");
 
             /// <summary>
-            /// x为depthBias(depcrated),y为normalBias(depcrated),z为shadowStrength,w为当前的cascade shadow数量
+            /// x为cascade blend dist,y为shadow distance，z为shadowStrength,w为当前的cascade shadow数量
             /// </summary>
             public static readonly int ShadowParams = Shader.PropertyToID("_ShadowParams");
 
@@ -346,6 +365,7 @@ namespace SRPLearn
             public const string ShadowPCF = "X_SHADOW_PCF";
             public const string ShadowBiasCasterVertex = "X_SHADOW_BIAS_CASTER_VERTEX";
             public const string ShadowBiasReceiverPixel = "X_SHADOW_BIAS_RECEIVER_PIXEL";
+            public const string CSMBlend = "X_CSM_BLEND";
 
         }
     }

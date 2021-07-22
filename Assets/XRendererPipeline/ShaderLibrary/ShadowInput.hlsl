@@ -10,6 +10,8 @@ float4x4 _XWorldToMainLightCascadeShadowMapSpaceMatrices[MAX_CASCADESHADOW_COUNT
 
 float4 _XCascadeCullingSpheres[MAX_CASCADESHADOW_COUNT];
 
+float4 _ShadowCascadeDistances;
+
 CBUFFER_END
 
 
@@ -23,9 +25,13 @@ Texture2D _XMainShadowMap;
 SamplerState sampler_XMainShadowMap_point_clamp;
 #endif
 
-float4 _ShadowParams; //x is depthBias,y is normal bias,z is strength,w is cascadeCount
+float4 _ShadowParams; //x is cascade shadow blend dist,z is strength,w is cascadeCount
 
 float4 _ShadowMapSize; //x = 1/shadowMap.width, y = 1/shadowMap.height,z = shadowMap.width,w = shadowMap.height
 
+
+#define CASCADE_SHADOW_BLEND_DIST _ShadowParams.x
+
+#define SHADOW_DISTANCE _ShadowParams.y
 
 #endif

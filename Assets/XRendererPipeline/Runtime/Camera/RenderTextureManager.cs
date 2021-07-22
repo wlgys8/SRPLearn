@@ -10,7 +10,7 @@ namespace SRPLearn{
 
         public static RenderTargetIdentifier AcquireColorTexture(CommandBuffer commandBuffer,ref CameraRenderDescription cameraRenderDescription){
             RenderTextureDescriptor renderTextureDescriptor = new RenderTextureDescriptor(cameraRenderDescription.pixelWidth,cameraRenderDescription.pixelHeight);
-            renderTextureDescriptor.depthBufferBits = 16;
+            renderTextureDescriptor.depthBufferBits = 32;
             renderTextureDescriptor.sRGB = true;
             renderTextureDescriptor.colorFormat = RenderTextureFormat.ARGB32;
             renderTextureDescriptor.msaaSamples = cameraRenderDescription.msaaLevel;

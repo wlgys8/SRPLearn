@@ -36,6 +36,7 @@
             #pragma fragment PassFragment
 
             #pragma shader_feature _RECEIVE_SHADOWS_OFF
+            #pragma shader_feature X_CSM_BLEND
       
             ENDHLSL
         }
@@ -67,14 +68,14 @@
             Name "ShadowDebug"
             Tags{"LightMode" = "ShadowDebug"}
 
-            ZWrite Off
-            ZTest LEqual
+            // ZWrite Off
+            // ZTest LEqual
             Cull Back
             Blend SrcAlpha OneMinusSrcAlpha
 
 
             HLSLPROGRAM
-
+            #pragma shader_feature X_CSM_BLEND
             #include "../ShaderLibrary/ShadowDebug.hlsl"
 
             #pragma vertex ShadowDebugVertex

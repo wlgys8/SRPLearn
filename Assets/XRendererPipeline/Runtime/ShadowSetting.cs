@@ -50,6 +50,13 @@ namespace  SRPLearn
         private float _cascadeRatio4 = 0;
 
         [SerializeField]
+        private bool _enableCSMBlend = false;
+
+        [SerializeField]
+        [Range(0.1f,2)]
+        private float _cascadeShadowBlendDist = 0.5f;
+
+        [SerializeField]
         private ShadowBiasType _shadowBiasType = ShadowBiasType.CasterVertexBias;
 
         [SerializeField]
@@ -57,6 +64,20 @@ namespace  SRPLearn
 
         [SerializeField]
         private bool _debugShadowResolution = false;
+
+        [SerializeField]
+        private bool _debugShadowCascade = false;
+
+        [SerializeField]
+        [Range(0.05f,1)]
+        private float _debugShadowResolutionAlpha = 0.5f;
+
+        [SerializeField]
+        private bool _drawCascadeCullingSphere = false;
+
+        [SerializeField]
+        [Range(0,1)]
+        private float _cascadeBlendCullingFactor = 0;
 
         public int cascadeCount{
             get{
@@ -67,16 +88,32 @@ namespace  SRPLearn
         public Vector3 cascadeRatio{
             get{
                 var total = _cascadeRatio1;
+                var result = new Vector3(_cascadeRatio1,0,0);
                 if(_shadowCascadeCount > 1){
                     total += _cascadeRatio2;
+                    result.y = total;
                 }
                 if(_shadowCascadeCount > 2){
                     total += _cascadeRatio3;
+                    result.z = total;
                 }
                 if(_shadowCascadeCount > 3){
                     total += _cascadeRatio4;
                 }
-                return new Vector3(_cascadeRatio1 / total,_cascadeRatio2 / total,_cascadeRatio3 / total);
+                result /= total;
+                return result;
+            }
+        }
+
+        public bool isCSMBlendEnabled{
+            get{
+                return _enableCSMBlend;
+            }
+        }
+
+        public float cascadeShadowBlendDist{
+            get{
+                return _cascadeShadowBlendDist;
             }
         }
 
@@ -101,6 +138,36 @@ namespace  SRPLearn
         public bool isShadowResolutionDebugOn{
             get{
                 return _debugShadowResolution;
+            }
+        }
+
+        public bool isShadowCascadeDebugOn{
+            get{
+                return _debugShadowCascade;
+            }
+        }
+
+        public bool shouldShadowDebugPassOn{
+            get{
+                return this.isShadowCascadeDebugOn || this.isShadowCascadeDebugOn;
+            }
+        }
+
+        public float debugShadowResolutionAlpha{
+            get{
+                return _debugShadowResolutionAlpha;
+            }
+        }
+
+        public bool drawCascadeCullingSphere{
+            get{
+                return _drawCascadeCullingSphere;
+            }
+        }
+
+        public float cascadeBlendCullingFactor{
+            get{
+                return _cascadeBlendCullingFactor;
             }
         }
     }  

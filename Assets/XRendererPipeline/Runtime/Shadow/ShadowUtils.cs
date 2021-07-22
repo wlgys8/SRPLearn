@@ -1,8 +1,17 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace SRPLearn{
+
+
+    public struct CascadeFrustrumBox{
+
+        public Vector4 positionSize;
+        public Vector3 forward;
+    }
+
     public class ShadowUtils
     {
         
@@ -42,5 +51,29 @@ namespace SRPLearn{
             }
             return false;
         }
+
+        public static void ConfigShadowDebugParams(CommandBuffer command,ShadowSetting shadowSetting){
+            command.Clear();
+            command.SetGlobalVector(ShadowShaderProperties.ShadowDebugParams,
+            new Vector4(shadowSetting.debugShadowResolutionAlpha,
+            shadowSetting.isShadowCascadeDebugOn?1:0,
+            shadowSetting.isShadowResolutionDebugOn?1:0,
+            0));
+        }
+
+
+        public static void ConfigCascadeDistances(CommandBuffer command,ShadowSetting setting){
+            command.Clear();
+            var cascadeDistances = (Vector4) setting.cascadeRatio * setting.shadowDistance;
+            cascadeDistances.w = setting.shadowDistance;
+            command.SetGlobalVector(ShadowShaderProperties.ShadowCascadeDistances,cascadeDistances);
+        }
+
+    }
+
+    public static class ShadowShaderProperties
+    {
+        public static readonly int ShadowDebugParams = Shader.PropertyToID("_ShadowDebugParams");
+        public static readonly int ShadowCascadeDistances = Shader.PropertyToID("_ShadowCascadeDistances");
     }
 }

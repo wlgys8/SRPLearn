@@ -46,6 +46,9 @@ namespace SRPLearn{
 
     public class XRenderPipeline : RenderPipeline
     {
+        public static event System.Action onPipelineBegin;
+
+        public static event System.Action onPipelineEnd;
 
         private ShaderTagId _shaderTag = new ShaderTagId("XForwardBase");
         private LightConfigurator _lightConfigurator = new LightConfigurator();
@@ -70,14 +73,45 @@ namespace SRPLearn{
             _setting = setting;
         }
 
+        private void ConfigPipelineShaderKeywords(){
+            if(_setting.shadowSetting.isCSMBlendEnabled){
+                Shader.EnableKeyword(ShadowCasterPass.ShaderKeywords.CSMBlend);
+            }else{
+                Shader.DisableKeyword(ShadowCasterPass.ShaderKeywords.CSMBlend);
+            }
+        }
+
+        private void ConfigPipelineShaderProeprties(ScriptableRenderContext context){
+            ShadowUtils.ConfigCascadeDistances(_command,_setting.shadowSetting);
+            context.ExecuteCommandBuffer(_command);
+        }
+
+        private void OnPipelineBegin(){
+            if(onPipelineBegin != null){
+                onPipelineBegin();
+            }
+            ShadowDebug.Setup(_setting.shadowSetting);
+        }
+
+        private void OnPipelineEnd(){
+            if(onPipelineEnd != null){
+                onPipelineEnd();
+            }
+        }
+
         protected override void Render(ScriptableRenderContext context, Camera[] cameras)
         {
+            OnPipelineBegin();
+            this.ConfigPipelineShaderKeywords();
+            this.ConfigPipelineShaderProeprties(context);
+            CameraUtil.SortCameras(cameras);
             //遍历摄像机，进行渲染
             foreach(var camera in cameras){
                 RenderPerCamera(context,camera);
             }
             //提交渲染命令
             context.Submit();
+            OnPipelineEnd();
         }
 
         private void ConfigRenderTarget(ScriptableRenderContext context,ref CameraRenderDescription cameraRenderDescription){
@@ -94,8 +128,17 @@ namespace SRPLearn{
             context.ExecuteCommandBuffer(_command);
         }
 
-        private void ConfigShaderPerCamera(ScriptableRenderContext context){
+        private void ConfigShaderPerCamera(ScriptableRenderContext context,Camera camera){
             AntiAliasUtil.ConfigShaderPerCamera(context,_command,_setting.antiAliasSetting);
+            CameraUtil.ConfigShaderProperties(_command,camera);
+            context.ExecuteCommandBuffer(_command);
+            _command.Clear();
+        }
+
+        private void ConfigShadowDebugParams(ScriptableRenderContext context){
+            var shadowSetting = _setting.shadowSetting;
+            ShadowUtils.ConfigShadowDebugParams(_command,shadowSetting);
+            context.ExecuteCommandBuffer(_command);
         }
 
         private void RenderPerCamera(ScriptableRenderContext context,Camera camera){
@@ -114,6 +157,7 @@ namespace SRPLearn{
             casterSetting.cullingResults = cullingResults;
             casterSetting.lightData = lightData;
             casterSetting.shadowSetting = _setting.shadowSetting;
+            casterSetting.camera = camera;
             //投影Pass
             _shadowCastPass.Execute(context,ref casterSetting);
 
@@ -126,7 +170,7 @@ namespace SRPLearn{
             ConfigRenderTarget(context,ref cameraDescription);
 
             //设置keywords
-            ConfigShaderPerCamera(context);
+            ConfigShaderPerCamera(context,camera);
 
             //非透明物体渲染
             _opaquePass.Execute(context,camera,ref cullingResults);
@@ -134,10 +178,17 @@ namespace SRPLearn{
             //透明物体渲染
             _transparentPass.Execute(context,camera,ref cullingResults);
 
-            if(this._setting.shadowSetting.isShadowResolutionDebugOn){
+            if(this._setting.shadowSetting.shouldShadowDebugPassOn){
                 //阴影调试
+                this.ConfigShadowDebugParams(context);
                 _shadowDebugPass.Execute(context,camera,ref cullingResults);
             }
+
+            if(camera.cameraType == CameraType.SceneView){
+                context.DrawGizmos(camera,GizmoSubset.PostImageEffects);
+            }
+
+
 
             //final blit
             if(_currentColorTarget != BuiltinRenderTextureType.CameraTarget){
