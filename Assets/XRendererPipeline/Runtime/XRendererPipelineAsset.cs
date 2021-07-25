@@ -19,6 +19,15 @@ namespace SRPLearn{
         [SerializeField]
         private AntiAliasSetting _antiAlias = new AntiAliasSetting();
 
+        [SerializeField]
+        private BuiltinAssets _builtinAssets;
+
+        public BuiltinAssets builtinAssets{
+            get{
+                return _builtinAssets;
+            }
+        }
+
         public bool enableSrpBatcher{
             get{
                 return _srpBatcher;
@@ -71,6 +80,7 @@ namespace SRPLearn{
             GraphicsSettings.useScriptableRenderPipelineBatching = setting.enableSrpBatcher;
             _command.name = "RenderCamera";
             _setting = setting;
+            Shader.SetGlobalTexture("_BRDFLUT",setting.builtinAssets.BRDFLUT);
         }
 
         private void ConfigPipelineShaderKeywords(){

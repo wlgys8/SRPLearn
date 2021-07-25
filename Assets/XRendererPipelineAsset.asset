@@ -41,3 +41,4 @@ MonoBehaviour:
       consoleCharpness: 4
       qualitySubPixTrim: 0
       qualitySubPixCap: 1
+  _builtinAssets: {fileID: 11400000, guid: 311d45aeff2e44843951fec010acced8, type: 2}
