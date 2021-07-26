@@ -38,9 +38,8 @@ void InitializeData(half3 l,half3 v,half3 n,inout PBRDesc desc,inout BRDFData br
 }
 
 //法线分布函数
-float D_TrowbridgeReitzGGX(PBRDesc desc,BRDFData brdfData){
-    half a2 = desc.a2;
-    half nh2 = brdfData.NoH * brdfData.NoH;
+float D_TrowbridgeReitzGGX(half a2,half NoH){
+    half nh2 = NoH * NoH;
     half b = nh2 * (a2 - 1) + 1.00001f;
     return a2 * INV_PI / (b * b);
 }
@@ -53,7 +52,7 @@ float V_SmithGGX(PBRDesc desc,BRDFData brdfData){
 }
 
 //菲涅尔函数
-float3 F_Schlick(half3 f0,half VoH){
+half3 F_Schlick(half3 f0,half VoH){
     return f0 + (1 - f0) * pow(1 - VoH,5);
 }
 
@@ -64,7 +63,7 @@ half3 F_SchlickRoughness(half3 f0,float NoV,float roughness){
 
 half3 BRDF(PBRDesc desc,BRDFData brdfData){
     half3 F = F_Schlick(desc.f0,brdfData.VoH);
-    float D = D_TrowbridgeReitzGGX(desc,brdfData);
+    float D = D_TrowbridgeReitzGGX(desc.a2,brdfData.NoH);
     float V = V_SmithGGX(desc,brdfData);
     half3 specular = D * V * F * 0.25;
     half3 ks = F;
