@@ -22,14 +22,17 @@ struct BRDFData{
 };
 
 
-void InitializeData(half3 l,half3 v,half3 n,inout PBRDesc desc,inout BRDFData brdfData){
+void InitializeBRDFData(half3 l,half3 v,half3 n,inout BRDFData brdfData){
     half3 h = normalize(l + v);
     brdfData.h = h;
     brdfData.NoL = max(0,dot(n,l));
     brdfData.NoV = max(0,dot(n,v));
     brdfData.NoH = max(0,dot(n,h));
     brdfData.VoH = max(0,dot(v,h));
+}
 
+void InitializeData(half3 l,half3 v,half3 n,inout PBRDesc desc,inout BRDFData brdfData){
+    InitializeBRDFData(l,v,n,brdfData);
     desc.a = desc.roughness * desc.roughness;
     desc.a2 = desc.a * desc.a;
     desc.k = desc.a * 0.5;
@@ -71,7 +74,7 @@ half3 BRDF(PBRDesc desc,BRDFData brdfData){
     return kd * INV_PI * desc.albedo  + ks * specular;
 }
 
-half3 BRDFIBLSpec(PBRDesc desc,BRDFData brdfData, float2 scaleBias){
+half3 BRDFIBLSpec(PBRDesc desc, float2 scaleBias){
     return desc.f0 * scaleBias.x + scaleBias.y;
 }
 

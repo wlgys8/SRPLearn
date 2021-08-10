@@ -66,11 +66,22 @@ half4 PBRFrag(Varyings input){
 
     BRDFData brdfData;
     InitializeData(lightDir,viewDir,normalWS,pbrDesc,brdfData);
+    half NoV = brdfData.NoV;
 
     //直接光的辐照度
     float shadowAtten = GetMainLightShadowAtten(positionWS,normalWS);
     half3 directIrradiance = brdfData.NoL * mainLight.color * shadowAtten;
     half3 color = BRDF(pbrDesc,brdfData) * directIrradiance;
+    
+    //点光源的辐照度计算
+    int lightCount = GetOtherLightCount();
+    for(int i = 0; i < lightCount; i ++){
+        XOtherLight otherLight = GetOtherLight(i);
+        PointLightInteractData interData = GetPointLightInteractData(otherLight,positionWS);
+        InitializeBRDFData(interData.lightDir,viewDir,normalWS,brdfData);
+        half3 pointLightIrradiance = brdfData.NoL * otherLight.color.rgb * interData.atten;
+        color += BRDF(pbrDesc,brdfData) * pointLightIrradiance;
+    }
 
     half3 indirectColor = 0;
     
@@ -78,16 +89,16 @@ half4 PBRFrag(Varyings input){
     //IBL Specular
     float3 reflectDir = reflect(-viewDir,normalWS);
     float3 prefilteredColor = texCUBElod(_IBLSpec,float4(reflectDir,(pbrDesc.roughness)*_IBLSpecMaxMip)).rgb;
-    float4 scaleBias = UNITY_SAMPLE_TEX2D(_BRDFLUT,float2(brdfData.NoV,pbrDesc.roughness));
-    half3 indirectSpec = BRDFIBLSpec(pbrDesc,brdfData,scaleBias.xy) * prefilteredColor;
+    float4 scaleBias = UNITY_SAMPLE_TEX2D(_BRDFLUT,float2(NoV,pbrDesc.roughness));
+    half3 indirectSpec = BRDFIBLSpec(pbrDesc,scaleBias.xy) * prefilteredColor;
     indirectColor += indirectSpec;
     #endif
 
     #if _PBR_IBL_DIFF
     //IBL Diffuse 
     float3 indirectDiff = texCUBElod(_IBLSpec,float4(normalWS,_IBLSpecMaxMip / 3 )) * pbrDesc.albedo * INV_PI;
-    // half3 ks = F_SchlickRoughness(pbrDesc.f0,brdfData.NoV,pbrDesc.roughness);
-    half3 ks = F_Schlick(pbrDesc.f0,brdfData.NoV);
+    // half3 ks = F_SchlickRoughness(pbrDesc.f0,NoV,pbrDesc.roughness);
+    half3 ks = F_Schlick(pbrDesc.f0,NoV);
     half3 kd = (1 - ks)*(1 - pbrDesc.metalness);
 
     indirectColor += kd * indirectDiff;
