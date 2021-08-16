@@ -124,7 +124,7 @@ float SampleShadowStrength(float3 uvd){
         }
         return 1 - atten;
     #else
-        float depth = _XMainShadowMap.Sample(sampler_XMainShadowMap_point_clamp,uvd.xy);
+        float depth = _XMainShadowMap.SampleLevel(sampler_XMainShadowMap_point_clamp,uvd.xy,0);
         // float depth = UNITY_SAMPLE_TEX2D(_XMainShadowMap,uvd.xy);
         #if UNITY_REVERSED_Z
         //depth > z
@@ -186,5 +186,7 @@ float GetMainLightShadowAtten(float3 positionWS,float3 normalWS){
         return 1 - shadowStrength * _ShadowParams.z;
     #endif
 }
+
+
 
 #endif

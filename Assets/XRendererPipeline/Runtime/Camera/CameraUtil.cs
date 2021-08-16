@@ -7,8 +7,13 @@ namespace SRPLearn{
     internal class CameraUtil
     {
         public static void ConfigShaderProperties(CommandBuffer commandBuffer,Camera camera){
-            commandBuffer.Clear();
             commandBuffer.SetGlobalVector(CameraShaderProperties.WorldSpaceCameraForward,camera.transform.forward);
+            var viewMatrix = camera.worldToCameraMatrix;
+            //不知道为什么，第二个参数是false才能正常得到世界坐标
+            var projectMatrix = GL.GetGPUProjectionMatrix(camera.projectionMatrix,false);
+            var matrixVP = projectMatrix * viewMatrix;
+            var invMatrixVP = matrixVP.inverse;
+            commandBuffer.SetGlobalMatrix(CameraShaderProperties.CameraMatrixVPInv,invMatrixVP);
         }
 
         public static void SortCameras(Camera[] cameras){
@@ -27,5 +32,6 @@ namespace SRPLearn{
     public static class CameraShaderProperties
     {
         public static readonly int WorldSpaceCameraForward = Shader.PropertyToID("_WorldSpaceCameraForward");
+        public static readonly int CameraMatrixVPInv = Shader.PropertyToID("_CameraMatrixVPInv");
     }
 }

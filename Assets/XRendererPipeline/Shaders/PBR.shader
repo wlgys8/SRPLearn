@@ -35,14 +35,16 @@
 
             #pragma multi_compile _ X_SHADOW_BIAS_RECEIVER_PIXEL
             #pragma multi_compile _ X_SHADOW_PCF
-            
+            #pragma shader_feature X_CSM_BLEND
+
+            #pragma shader_feature _RECEIVE_SHADOWS_OFF
+            #pragma shader_feature _PBR_IBL_SPEC
+            #pragma shader_feature _PBR_IBL_DIFF
+
             #pragma vertex PassVertex
             #pragma fragment PassFragment
 
-            #pragma shader_feature _RECEIVE_SHADOWS_OFF
-            #pragma shader_feature X_CSM_BLEND
-            #pragma shader_feature _PBR_IBL_SPEC
-            #pragma shader_feature _PBR_IBL_DIFF
+
 
             ENDHLSL
         }
@@ -87,6 +89,21 @@
             #pragma vertex ShadowDebugVertex
             #pragma fragment ShadowDebugFragment
         
+            ENDHLSL
+        }
+
+        Pass{
+            Tags {"LightMode"="Deferred"}
+            
+            Name "DEFERRED"
+
+            Cull Back
+            
+            HLSLPROGRAM
+        
+            #pragma vertex PassVertex
+            #pragma fragment FragPBR_GBuffer
+
             ENDHLSL
         }
     }

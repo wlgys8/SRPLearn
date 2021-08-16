@@ -5,29 +5,20 @@
 #include "./Shadow.hlsl"
 #include "./BlinnPhong.hlsl"
 
-
-struct PointLightInteractData{
-    half3 lightDir;
-    half atten;
-};
-
 //光强随距离衰减公式
 float DistanceAtten(float distanceSqr,float rangeSqr){
-    float factor = saturate(1 - distanceSqr * rcp(rangeSqr));
-    factor = factor * factor;
-    return factor * rcp(max(distanceSqr,0.001));
+    float x2 = distanceSqr / rangeSqr;
+    float x4 = x2 * x2;
+    float oneMinuseX4 = saturate(1 - x4);
+    float smooth = oneMinuseX4 * oneMinuseX4;
+    return smooth / x2;
 }
 
-int GetOtherLightCount(){
-    return clamp(OTHER_LIGHT_COUNT,0,MAX_OTHER_LIGHT_PER_OBJECT);
-}
-
-
-PointLightInteractData GetPointLightInteractData(XOtherLight light,float3 positionWS){
+PointLightInteractData GetPointLightInteractData(float4 lightSphere,float3 positionWS){
     PointLightInteractData data;
-    float3 lightPosition = light.positionRange.xyz;
+    float3 lightPosition = lightSphere.xyz;
     //range是光源的有效范围
-    float range = light.positionRange.w;
+    float range = lightSphere.w;
     float rangeSqr = range * range;
     float3 lightVector = lightPosition - positionWS;
     float3 lightDir = normalize(lightVector);
@@ -38,6 +29,40 @@ PointLightInteractData GetPointLightInteractData(XOtherLight light,float3 positi
     data.atten = atten;
     return data;
 }
+
+PointLightInteractData GetPointLightInteractData(XOtherLight light,float3 positionWS){
+    return GetPointLightInteractData(light.positionRange,positionWS);
+}
+
+ShadeLightDesc GetMainLightShadeDesc(){
+    ShadeLightDesc desc;
+    desc.dir = _XMainLightDirection;
+    desc.color = _XMainLightColor;
+    return desc;
+}
+
+ShadeLightDesc GetMainLightShadeDescWithShadow(float3 positionWS,half3 normalWS){
+    ShadeLightDesc mainLightDesc =  GetMainLightShadeDesc();
+    float shadowAtten = GetMainLightShadowAtten(positionWS,normalWS);
+    mainLightDesc.color *= shadowAtten;
+    return mainLightDesc;
+}
+
+ShadeLightDesc GetPointLightShadeDesc(float4 lightSphere,half3 lightColor,float3 positionWS){
+    PointLightInteractData interData = GetPointLightInteractData(lightSphere,positionWS);
+    ShadeLightDesc desc;
+    desc.dir = interData.lightDir;
+    desc.color = lightColor * interData.atten;
+    return desc;
+}
+
+ShadeLightDesc GetOtherLightShadeDesc(int index,float3 positionWS){
+    XOtherLight light = GetOtherLight(index);
+    return GetPointLightShadeDesc(light.positionRange,light.color.rgb,positionWS);
+}
+
+
+
 
 //计算所有点光源的BlinnPhong光照
 half4 BlinnPhongPointLights(BlinnPhongGemo gemo,BlinnPhongProperty property){

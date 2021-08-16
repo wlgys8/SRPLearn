@@ -10,10 +10,11 @@ float4x4 unity_MatrixInvV;
 float4x4 unity_MatrixVP;
 float4x4 unity_MatrixInvVP;
 float4 _ScreenParams;
+float4 _ProjectionParams;
 
 //管线变量
 float3 _WorldSpaceCameraForward;
-
+float4x4 _CameraMatrixVPInv;
 
 #define TRANSFORM_TEX(tex, name) ((tex.xy) * name##_ST.xy + name##_ST.zw)
 
@@ -26,6 +27,7 @@ float4 unity_WorldTransformParams; // w is usually 1.0, or -1.0 for odd-negative
 
 half4 unity_LightData;
 half4 unity_LightIndices[2];
+
 
 CBUFFER_END
 

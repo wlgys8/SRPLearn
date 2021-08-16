@@ -19,9 +19,22 @@ float3 TransformObjectToWorldNormal(float3 normalOS)
     return normalize(mul(normalOS, (float3x3)unity_WorldToObject));
 }
 
-
 float4 TransformWorldToHClip(float3 positionWS){
     return mul(unity_MatrixVP,float4(positionWS,1));
+}
+
+float3 TransformPositionCSToWS(float3 positionCS){
+    float4 positionWS = mul(_CameraMatrixVPInv,float4(positionCS,1));
+    positionWS /= positionWS.w;
+    return positionWS.xyz;
+}
+
+float3 ReconstructPositionWS(float2 uv, float depth){
+    //使用uv和depth，可以得到ClipSpace的坐标
+    float3 positionCS = float3(uv * 2 -1,depth);
+    //然后将坐标从ClipSpace转换到世界坐标
+    float3 positionWS = TransformPositionCSToWS(positionCS);
+    return positionWS;
 }
 
 #define UnityObjectToClipPos ObjectToHClipPosition

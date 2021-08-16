@@ -23,11 +23,9 @@ namespace SRPLearn{
     internal class AntiAliasUtil
     {
 
-        public static void ConfigShaderPerCamera(ScriptableRenderContext context,CommandBuffer command, AntiAliasSetting aliasSetting){
-            command.Clear();
+        public static void ConfigShaderPerCamera(CommandBuffer command, AntiAliasSetting aliasSetting){
             ConfigShaderKeywords(command,aliasSetting);
             ConfigShaderParams(command,aliasSetting);
-            context.ExecuteCommandBuffer(command);
         }
 
         private static void ConfigShaderKeywords(CommandBuffer command, AntiAliasSetting aliasSetting){

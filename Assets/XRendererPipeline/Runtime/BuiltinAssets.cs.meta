@@ -5,6 +5,7 @@ MonoImporter:
   serializedVersion: 2
   defaultReferences:
   - _BRDFLUT: {fileID: 2800000, guid: 0b057aabf3fb1405ca30dd2fc5efdfa5, type: 3}
+  - _defaultMaterial: {fileID: 2100000, guid: a0f35f69ff2694d57a8997867546c244, type: 2}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 
