@@ -28,4 +28,5 @@ Unity版本: 2019.4.16
   - [FXAA抗锯齿SRP实现](https://github.com/wlgys8/SRPLearn/wiki/FXAA_Implement)
 - [CSM阴影混合过渡](https://github.com/wlgys8/SRPLearn/wiki/CSMBlend)
 - [PBR实现](https://github.com/wlgys8/SRPLearn/wiki/PBR)
+- [Tile Based Deferred Shading](https://github.com/wlgys8/SRPLearn/wiki/DeferredShading)
 - 待补充
