@@ -63,9 +63,16 @@ void InitializeBRDFData(half3 l,half3 v,half3 n,inout BRDFData brdfData){
 }
 
 BRDFData InitializeBRDFData(ShadePointDesc pointDesc,ShadeLightDesc lightDesc){
-    float3 viewDir = normalize(_WorldSpaceCameraPos - pointDesc.positionWS);
+    half3 v = normalize(_WorldSpaceCameraPos - pointDesc.positionWS);
+    half3 l = lightDesc.dir;
+    half3 n = pointDesc.normalWS;
     BRDFData brdfData;
-    InitializeBRDFData(lightDesc.dir,viewDir,pointDesc.normalWS,brdfData);
+    half3 h = normalize(l + v);
+    brdfData.h = h;
+    brdfData.NoL = max(0,dot(n,l));
+    brdfData.NoV = max(0,dot(n,v));
+    brdfData.NoH = max(0,dot(n,h));
+    brdfData.VoH = max(0,dot(v,h));
     return brdfData;
 }
 
@@ -101,7 +108,7 @@ half3 BRDF(PBRDesc desc,BRDFData brdfData){
     half3 specular = D * V * F * 0.25;
     half3 ks = F;
     half3 kd = (1 - ks)*(1 - desc.metalness); //金属没有漫反射
-    return kd * INV_PI * desc.albedo  + ks * specular;
+    return kd * INV_PI * desc.albedo + ks * specular;
 }
 
 half3 BRDFIBLSpec(PBRDesc desc, float2 scaleBias){

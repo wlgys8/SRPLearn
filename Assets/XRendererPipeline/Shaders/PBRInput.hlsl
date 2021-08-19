@@ -16,6 +16,13 @@ struct Varyings
     float3 positionWS   : TEXCOORD2;
 };
 
+struct GBufferVaryings{
+    float2 uv           : TEXCOORD0;
+    float4 positionCS   : SV_POSITION;
+    float3 normalWS    : TEXCOORD1;
+    float3 positionWS   : TEXCOORD2;
+};
+
 UNITY_DECLARE_TEX2D(_AlbedoMap);
 UNITY_DECLARE_TEX2D(_MetalMap);
 UNITY_DECLARE_TEX2D(_BRDFLUT);

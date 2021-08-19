@@ -8,12 +8,12 @@
 #pragma multi_compile _ X_CSM_BLEND
 #pragma multi_compile _ DEFERRED_BUFFER_DEBUGON
 #pragma multi_compile _ DEFERRED_LIGHTSHADE_BY_CS
-#pragma multi_compile DEFERRED_LIGHT_CULLING_SPHERE_BOUNDS DEFERRED_LIGHT_CULLING_SIDES
+#pragma multi_compile _ DEFERRED_LIGHT_CULLING_AABB DEFERRED_LIGHT_CULLING_SIDES
 #pragma multi_compile _ DEFERRED_LIGHT_CULLING_DEPTH_SLICE
+#pragma multi_compile _ UNITY_REVERSED_Z
+#pragma multi_compile _ GBUFFER_ACCURATE_NORMAL
 
 #pragma kernel CSMain
-
-#define UNITY_REVERSED_Z 1
 
 #define MAX_LIGHT_COUNT 1024
 #define THREAD_NUM_X 16
@@ -48,7 +48,6 @@ RWStructuredBuffer<uint> _RWTileLightsArgsBuffer;
 RWStructuredBuffer<uint> _RWTileLightsIndicesBuffer;
 #endif
 uniform float4 _ZBufferParams;
-uniform float4x4 _CameraMatrixV;
 //近平面左下角
 uniform float3 _CameraNearPlaneLB;
 //近平面水平基向量
@@ -70,12 +69,14 @@ inline float LinearEyeDepth( float z )
     return (1.0 / (_ZBufferParams.z * z + _ZBufferParams.w));
 }
 
+//p1,p2与摄像机(0,0,0)三点构成了视锥侧平面
 bool IntersectSide(float3 p1,float3 p2,float4 lightSphere){
     float3 n = -normalize(cross(p1,p2));
     float d = dot(lightSphere.xyz,n);
-    return abs(d) < lightSphere.w;
+    return d < lightSphere.w;
 }
 
+//aabb.xy为中心,aabb.zw为extents
 bool IntersectAABB(float4 aabb,float4 lightSphere){
     float2 p = aabb.xy + aabb.zw * sign(lightSphere.xy - aabb.xy);
     float2 d = p - lightSphere.xy;
@@ -92,9 +93,8 @@ uint GetLightDepthSliceMask(float tileDepthMin,float tileDepthMax,float lightDep
     return mask;
 }
 
-
+//tileFrustumCorners是tile视锥minDepth平面的4个顶点
 bool Intersect(float3 tileFrustumCorners[4],float4 lightSphere){
-    
     float tileDepthMin = asfloat(tileMinDepthInt);
     float tileDepthMax = asfloat(tileMaxDepthInt);
     float lightRadius = lightSphere.w;
@@ -111,7 +111,7 @@ bool Intersect(float3 tileFrustumCorners[4],float4 lightSphere){
     }
     #endif
     
-    #if DEFERRED_LIGHT_CULLING_SPHERE_BOUNDS
+    #if DEFERRED_LIGHT_CULLING_AABB
         float minZ = max(tileDepthMin,lightDepthMin);
         float maxZ = min(tileDepthMax,lightDepthMax);
         float farPlaneScale = maxZ / tileDepthMin;
@@ -140,6 +140,7 @@ half3 ShadeDebug(PBRShadeInput shadeInput,float depth){
         color = shadeInput.albedo;
     }else if(debugMode == 2){ //normal
         color = (shadeInput.normal + 1) * 0.5;
+        // color = shadeInput.normal.z;
     }else if(debugMode == 3){ //position
         color = shadeInput.positionWS / 20;
     }else if(debugMode == 4){//metalness
@@ -161,7 +162,7 @@ half3 ShadeDebug(PBRShadeInput shadeInput,float depth){
 
 #if DEFERRED_LIGHTSHADE_BY_CS
 void ShadePixelLight(uint2 xy,float depth){
-    if(xy.x > _ScreenParams.x || xy.y > _ScreenParams.y){
+    if((float)xy.x > _ScreenParams.x || (float)xy.y > _ScreenParams.y){
         return;
     }
     float2 uv = xy * (_ScreenParams.zw - 1);
@@ -205,7 +206,7 @@ void CSMain (uint3 id : SV_DispatchThreadID,uint3 groupId:SV_GROUPID, uint group
 {   
     //stage 1. 初始化groupshared变量
     if(groupIndex == 0){
-        tileMinDepthInt = 0xFFFFFFFF;;
+        tileMinDepthInt = 0xFFFFFFFF;
         tileMaxDepthInt = 0;
         tileVisibleLightCount = 0;
         gemoDepthMask = 0;
@@ -213,12 +214,10 @@ void CSMain (uint3 id : SV_DispatchThreadID,uint3 groupId:SV_GROUPID, uint group
 
     GroupMemoryBarrierWithGroupSync();
 
-    bool inScreen = id.x < _ScreenParams.x && id.y < _ScreenParams.y;
-
+    bool inScreen = (float)id.x < _ScreenParams.x && (float)id.y < _ScreenParams.y;
     //stage 2. 计算tile的min/max depth
     float depth = 0;
     float linearDepth = 0;
-    //pixel
     if(inScreen){
         depth = _XDepthTexture[id.xy].r;
         #if UNITY_REVERSED_Z
@@ -250,7 +249,7 @@ void CSMain (uint3 id : SV_DispatchThreadID,uint3 groupId:SV_GROUPID, uint group
     //一个pass处理16x16=256盏灯
     uint passCnt = ceil((float)_DeferredOtherLightCount / THREAD_COUNT);
     uint2 tileId = groupId.xy;
-    float tileDepthMinScale = tileDepthMin / _ProjectionParams.y;
+    float tileDepthMinScale = tileDepthMin / _ProjectionParams.y; //_ProjectionParams.y is nearPlaneZ
     float3 tileFrustumCorners[4];
     tileFrustumCorners[0] = tileDepthMinScale * (_CameraNearPlaneLB + tileId.x * _CameraNearBasisH + tileId.y * _CameraNearBasisV);
     tileFrustumCorners[1] = tileFrustumCorners[0] + _CameraNearBasisH * tileDepthMinScale;
@@ -261,7 +260,7 @@ void CSMain (uint3 id : SV_DispatchThreadID,uint3 groupId:SV_GROUPID, uint group
         uint lightIndex = passIdx * THREAD_COUNT + groupIndex;
         if(lightIndex < _DeferredOtherLightCount){
             float4 lightSphere = _DeferredOtherLightPositionAndRanges[lightIndex];
-            lightSphere.xyz = mul(_CameraMatrixV,float4(lightSphere.xyz,1));//转到CameraView坐标系
+            lightSphere.xyz = mul(_CameraMatrixV_Unity,float4(lightSphere.xyz,1));//转到CameraView坐标系
             if(Intersect(tileFrustumCorners,lightSphere)){
                 uint offset;
                 InterlockedAdd(tileVisibleLightCount,1,offset);

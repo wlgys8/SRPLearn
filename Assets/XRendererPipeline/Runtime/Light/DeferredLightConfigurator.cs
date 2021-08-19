@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Unity.Collections;
+using Unity.Mathematics;
 
 namespace SRPLearn{
     public class DeferredLightConfigurator
@@ -21,10 +22,11 @@ namespace SRPLearn{
 
         private const int MAX_LIGHT_COUNT = 1024;
 
-        private ComputeBuffer _lightPositionAndRangeBuffer = new ComputeBuffer(MAX_LIGHT_COUNT,sizeof(float)*4,ComputeBufferType.Default,ComputeBufferMode.Dynamic);
-        private ComputeBuffer _lightColorsBuffer = new ComputeBuffer(MAX_LIGHT_COUNT,sizeof(float) * 4,ComputeBufferType.Default,ComputeBufferMode.Dynamic);
-        private NativeArray<Vector4> _lightPositionAndRangeArray = new NativeArray<Vector4>(MAX_LIGHT_COUNT,Allocator.Persistent,NativeArrayOptions.UninitializedMemory);
-        private NativeArray<Color> _lightColorArray = new NativeArray<Color>(MAX_LIGHT_COUNT,Allocator.Persistent,NativeArrayOptions.UninitializedMemory);
+        //ComputeBufferMode.Dynamic在Windows上异常,Dont know why
+        private ComputeBuffer _lightPositionAndRangeBuffer = new ComputeBuffer(MAX_LIGHT_COUNT,sizeof(float)*4); //,ComputeBufferType.Default,ComputeBufferMode.Dynamic);
+        private ComputeBuffer _lightColorsBuffer = new ComputeBuffer(MAX_LIGHT_COUNT,sizeof(float) * 4); //,ComputeBufferType.Default,ComputeBufferMode.Dynamic);
+        private NativeArray<float4> _lightPositionAndRangeArray = new NativeArray<float4>(MAX_LIGHT_COUNT,Allocator.Persistent,NativeArrayOptions.UninitializedMemory);
+        private NativeArray<float4> _lightColorArray = new NativeArray<float4>(MAX_LIGHT_COUNT,Allocator.Persistent,NativeArrayOptions.UninitializedMemory);
         private int _otherLightCount = 0;
         private bool _disposed = false;
 
@@ -65,14 +67,14 @@ namespace SRPLearn{
                 }
                 lightIndex ++;
             }
-
-            pointLights.Sort(_pointLightComparer);
+            // pointLights.Sort(_pointLightComparer);
             int lightCount = pointLights.Length;
             for(var i = 0; i < lightCount; i ++){
                 var l = pointLights[i];
                 var pos = l.light.transform.position;
-                _lightPositionAndRangeArray[i] = new Vector4(pos.x,pos.y,pos.z,l.range);
-                _lightColorArray[i] = l.finalColor;
+                _lightPositionAndRangeArray[i] = new float4(pos.x,pos.y,pos.z,l.range);
+                var finalColor = l.finalColor;
+                _lightColorArray[i] = new float4(finalColor.r,finalColor.g,finalColor.b,finalColor.a);
             }
             _otherLightCount = lightCount;
             _lightPositionAndRangeBuffer.SetData(_lightPositionAndRangeArray,0,0,lightCount);

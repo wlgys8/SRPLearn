@@ -7,9 +7,9 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Iron
+  m_Name: PBR_NO_IBL
   m_Shader: {fileID: 4800000, guid: 588d7cb9dcc30447aa8a3772bdccb31d, type: 3}
-  m_ShaderKeywords: _PBR_IBL_DIFF _PBR_IBL_SPEC
+  m_ShaderKeywords: 
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -20,7 +20,7 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _AlbedoMap:
-        m_Texture: {fileID: 2800000, guid: cf4173e53221c4e3b8d8f2a93821e8d8, type: 3}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BRDFLUT:
@@ -56,15 +56,15 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _IBLSpec:
-        m_Texture: {fileID: 8900000, guid: 45ad85a66b2194545997b41b7ee729d9, type: 3}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: cf4173e53221c4e3b8d8f2a93821e8d8, type: 3}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetalMap:
-        m_Texture: {fileID: 2800000, guid: 66db9789e4fc9449786edde1b07b22dd, type: 3}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicGlossMap:
@@ -89,18 +89,18 @@ Material:
     - _GlossyReflections: 1
     - _IBLSpecMaxMip: 12
     - _Metallic: 0
-    - _Metalness: 1
+    - _Metalness: 0.671
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
     - _RECEIVE_SHADOWS_OFF: 0
-    - _Roughness: 0.01
+    - _Roughness: 0.338
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
     - _ZWrite: 1
     m_Colors:
-    - _Color: {r: 0.745283, g: 0.745283, b: 0.745283, a: 1}
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
   m_BuildTextureStacks: []

@@ -21,7 +21,7 @@ namespace SRPLearn{
         }
 
         public enum TileLightCullingAlgorithm{
-            SphereBounds,
+            AABB,
             SideFace
         }
         
@@ -36,9 +36,11 @@ namespace SRPLearn{
         public bool lightShadeByComputeShader = true;
 
 
-        public TileLightCullingAlgorithm tileLightCullingAlgorithm = TileLightCullingAlgorithm.SphereBounds;
+        public TileLightCullingAlgorithm tileLightCullingAlgorithm = TileLightCullingAlgorithm.AABB;
 
         public bool enableDepthSliceForLightCulling = true;
+
+        public bool accurateNormals = true;
 
 
         public FrameBufferOutputDebug outputDebug{

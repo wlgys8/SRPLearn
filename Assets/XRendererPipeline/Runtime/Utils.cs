@@ -43,9 +43,7 @@ namespace SRPLearn{
                 new Vector2(0,1),
                 new Vector2(1,1),
             };
-
             int[] indices = { 0, 2, 1,1,2,3};
-
             Mesh mesh = new Mesh();
             mesh.indexFormat = IndexFormat.UInt16;
             mesh.vertices = positions;

@@ -35,7 +35,7 @@ namespace SRPLearn{
                 _tileLightsIndicesBuffer = null;
             }
             if(_tileLightsArgsBuffer == null){
-                _tileLightsArgsBuffer = new ComputeBuffer(argsBufferSize,sizeof(int),ComputeBufferType.Default,ComputeBufferMode.Dynamic);
+                _tileLightsArgsBuffer = new ComputeBuffer(argsBufferSize,sizeof(int));
                 Shader.SetGlobalBuffer(ShaderConstants.TileLightsArgsBuffer,_tileLightsArgsBuffer);
                 _computeShader.SetBuffer(0,ShaderConstants.RWTileLightsArgsBuffer,_tileLightsArgsBuffer);
             }
@@ -45,7 +45,7 @@ namespace SRPLearn{
                 _tileLightsIndicesBuffer = null;
             }
             if(_tileLightsIndicesBuffer == null){
-                _tileLightsIndicesBuffer = new ComputeBuffer(indicesBufferSize,sizeof(int),ComputeBufferType.Default,ComputeBufferMode.Dynamic);
+                _tileLightsIndicesBuffer = new ComputeBuffer(indicesBufferSize,sizeof(int));
                 Shader.SetGlobalBuffer(ShaderConstants.TileLightsIndicesBuffer,_tileLightsIndicesBuffer);
                 _computeShader.SetBuffer(0,ShaderConstants.RWTileLightsIndicesBuffer,_tileLightsIndicesBuffer);
             }
@@ -55,41 +55,39 @@ namespace SRPLearn{
             if(!_computeShader){
                 return;
             }
-            var camera = tileLightCullingParams.cameraRenderDescription;
+            var cameraDes = tileLightCullingParams.cameraRenderDescription;
             var renderTargetIdentifier = tileLightCullingParams.renderTargetIdentifier;
             var lightShadeByComputeShader = tileLightCullingParams.lightShadeByComputeShader;
 
-            uint tx,ty,tz;
-            _computeShader.GetKernelThreadGroupSizes(0,out tx,out ty,out tz);
+            uint tileSizeX,tileSizeY,tileSizeZ;
+            _computeShader.GetKernelThreadGroupSizes(0,out tileSizeX,out tileSizeY,out tileSizeZ);
 
-            var screenWidth = camera.pixelWidth;
-            var screenHeight = camera.pixelHeight;
-            var threadGroupX = Mathf.CeilToInt(screenWidth * 1f / tx);
-            var threadGroupY = Mathf.CeilToInt(screenHeight * 1f / ty);
+            var screenWidth = cameraDes.pixelWidth;
+            var screenHeight = cameraDes.pixelHeight;
+            var tileCountX = Mathf.CeilToInt(screenWidth * 1f / tileSizeX);
+            var tileCountY = Mathf.CeilToInt(screenHeight * 1f / tileSizeY);
 
             _commandbuffer.Clear();
-            _commandbuffer.SetGlobalVector(ShaderConstants.DeferredTileParams,new Vector4(tx,ty,threadGroupX,threadGroupY));
+            _commandbuffer.SetGlobalVector(ShaderConstants.DeferredTileParams,new Vector4(tileSizeX,tileSizeY,tileCountX,tileCountY));
             if(lightShadeByComputeShader){
                 _commandbuffer.SetComputeTextureParam(_computeShader,0,ShaderConstants.OutTexture,renderTargetIdentifier);
             }else{
-                EnsureTileComputeBuffer(threadGroupX,threadGroupY);
+                EnsureTileComputeBuffer(tileCountX,tileCountY);
             }
-            _commandbuffer.SetComputeVectorParam(_computeShader,ShaderConstants.TileCount,new Vector4(threadGroupX,threadGroupY,0,0));
-            var cameraComp = camera.camera;
-            _commandbuffer.SetComputeMatrixParam(_computeShader,ShaderConstants.CameraMatrixV,cameraComp.transform.worldToLocalMatrix);
+            _commandbuffer.SetComputeVectorParam(_computeShader,ShaderConstants.TileCount,new Vector4(tileCountX,tileCountY,0,0));
+            var camera = cameraDes.camera;
+            var nearPlaneZ = camera.nearClipPlane;
+            var nearPlaneHeight = Mathf.Tan(Mathf.Deg2Rad * camera.fieldOfView  * 0.5f) * 2 * camera.nearClipPlane;
+            var nearPlaneWidth = camera.aspect * nearPlaneHeight;
 
-            var nearPlaneZ = cameraComp.nearClipPlane;
-            var nearPlaneHeight = Mathf.Tan(Mathf.Deg2Rad * cameraComp.fieldOfView  * 0.5f) * 2 * cameraComp.nearClipPlane;
-            var nearPlaneWidth = cameraComp.aspect * nearPlaneHeight;
-
-            var zbufferParams = BuildZBufferParams(cameraComp.nearClipPlane,cameraComp.farClipPlane);
+            var zbufferParams = BuildZBufferParams(camera.nearClipPlane,camera.farClipPlane);
             _commandbuffer.SetComputeVectorParam(_computeShader,ShaderConstants.ZBufferParams,zbufferParams);
             _commandbuffer.SetComputeVectorParam(_computeShader, ShaderConstants.CameraNearPlaneLB,new Vector4( - nearPlaneWidth/2,-nearPlaneHeight/2,nearPlaneZ,0));
-            var basisH = new Vector2(tx * nearPlaneWidth / screenWidth,0);
-            var basisV = new Vector2(0,ty * nearPlaneHeight / screenHeight);
+            var basisH = new Vector2(tileSizeX * nearPlaneWidth / screenWidth,0);
+            var basisV = new Vector2(0,tileSizeY * nearPlaneHeight / screenHeight);
             _commandbuffer.SetComputeVectorParam(_computeShader,ShaderConstants.CameraNearBasisH,basisH);
             _commandbuffer.SetComputeVectorParam(_computeShader,ShaderConstants.CameraNearBasisV,basisV);
-            _commandbuffer.DispatchCompute(_computeShader,0,threadGroupX,threadGroupY,1);
+            _commandbuffer.DispatchCompute(_computeShader,0,tileCountX,tileCountY,1);
             context.ExecuteCommandBuffer(_commandbuffer);
 
         }
@@ -117,7 +115,6 @@ namespace SRPLearn{
             public static readonly int CameraDepthTexture = Shader.PropertyToID("_CameraDepthTexture");
             public static readonly int OutTexture = Shader.PropertyToID("_OutTexture");
             public static readonly int ZBufferParams = Shader.PropertyToID("_ZBufferParams");
-            public static readonly int CameraMatrixV = Shader.PropertyToID("_CameraMatrixV");
             public static readonly int CameraNearPlaneLB = Shader.PropertyToID("_CameraNearPlaneLB");
             public static readonly int CameraNearBasisH = Shader.PropertyToID("_CameraNearBasisH");
             public static readonly int CameraNearBasisV = Shader.PropertyToID("_CameraNearBasisV");

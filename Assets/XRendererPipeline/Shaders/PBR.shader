@@ -16,7 +16,7 @@
 
     SubShader
     {
-        Tags { "RenderType"="Opaque" "LightMode"="XForwardBase"}
+        Tags { "RenderType"="Opaque"}
         LOD 100
 
         HLSLINCLUDE
@@ -28,6 +28,7 @@
         Pass
         {
             Name "DEFAULT"
+            Tags {"LightMode"="XForwardBase"}
 
             Cull Back
 
@@ -41,8 +42,8 @@
             #pragma shader_feature _PBR_IBL_SPEC
             #pragma shader_feature _PBR_IBL_DIFF
 
-            #pragma vertex PassVertex
-            #pragma fragment PassFragment
+            #pragma vertex VertForward
+            #pragma fragment FragForward
 
 
 
@@ -100,9 +101,11 @@
             Cull Back
             
             HLSLPROGRAM
+
+            #pragma shader_feature GBUFFER_ACCURATE_NORMAL
         
-            #pragma vertex PassVertex
-            #pragma fragment FragPBR_GBuffer
+            #pragma vertex VertGBuffer
+            #pragma fragment FragGBuffer
 
             ENDHLSL
         }

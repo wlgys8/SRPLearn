@@ -48,3 +48,4 @@ MonoBehaviour:
     lightShadeByComputeShader: 0
     tileLightCullingAlgorithm: 0
     enableDepthSliceForLightCulling: 1
+    accurateNormals: 1

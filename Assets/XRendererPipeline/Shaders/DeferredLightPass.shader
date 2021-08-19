@@ -27,6 +27,7 @@ Shader "Hidden/SRPLearn/DeferredLightPass"
             #pragma shader_feature X_CSM_BLEND
             #pragma shader_feature _RECEIVE_SHADOWS_OFF
             #pragma shader_feature DEFERRED_BUFFER_DEBUGON
+            #pragma shader_feature GBUFFER_ACCURATE_NORMAL
 
             #pragma vertex Vertex
             #pragma fragment Fragment
@@ -54,7 +55,7 @@ Shader "Hidden/SRPLearn/DeferredLightPass"
                 if(debugMode == 1){ //albedo
                     color = shadeInput.albedo;
                 }else if(debugMode == 2){ //normal
-                    color = (shadeInput.normal + 1) * 0.5;
+                    color = shadeInput.normal ;
                 }else if(debugMode == 3){ //position
                     color = shadeInput.positionWS / 20;
                 }else if(debugMode == 4){//metalness
@@ -82,11 +83,6 @@ Shader "Hidden/SRPLearn/DeferredLightPass"
             {   
                 float2 uv = input.uv;
                 float depth = _XDepthTexture.Sample(sampler_pointer_clamp,input.uv).x;
-                float2 coord = _ScreenParams.xy * uv; 
-                uint2 tileId = floor(coord / _DeferredTileParams.xy);
-                uint tileIndex = tileId.y * _DeferredTileParams.z + tileId.x;
-                uint lightCount = _TileLightsArgsBuffer[tileIndex];
-
                 half4 g0 =  _GBuffer0.Sample(sampler_pointer_clamp,input.uv);
                 half4 g1 =  _GBuffer1.Sample(sampler_pointer_clamp,input.uv);
                 half4 g2 =  _GBuffer2.Sample(sampler_pointer_clamp,input.uv);
@@ -95,6 +91,11 @@ Shader "Hidden/SRPLearn/DeferredLightPass"
                 float3 positionWS = ReconstructPositionWS(uv,depth);
                 shadeInput.positionWS = positionWS;
                 DecodeGBuffer(shadeInput,g0,g1,g2,g3);
+
+                float2 coord = _ScreenParams.xy * uv; 
+                uint2 tileId = floor(coord / _DeferredTileParams.xy);
+                uint tileIndex = tileId.y * _DeferredTileParams.z + tileId.x;
+                uint lightCount = _TileLightsArgsBuffer[tileIndex];
 
                 half3 color = 0;
 

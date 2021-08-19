@@ -1,6 +1,7 @@
 #ifndef COMMON_INPUT_INCLUDE
 #define COMMON_INPUT_INCLUDE
 
+
 #include "HLSLSupport.cginc"
 
 //Unity 内置变量
@@ -15,6 +16,8 @@ float4 _ProjectionParams;
 //管线变量
 float3 _WorldSpaceCameraForward;
 float4x4 _CameraMatrixVPInv;
+float4x4 _CameraMatrixV;
+float4x4 _CameraMatrixV_Unity;
 
 #define TRANSFORM_TEX(tex, name) ((tex.xy) * name##_ST.xy + name##_ST.zw)
 

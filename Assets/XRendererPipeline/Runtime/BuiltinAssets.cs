@@ -16,7 +16,6 @@ namespace SRPLearn{
 
         [System.NonSerialized]
         private ComputeShader _deferredLightingCullingInstance;
-
         public Texture2D BRDFLUT{
             get{
                 return _BRDFLUT;
@@ -36,6 +35,7 @@ namespace SRPLearn{
                 return _deferredLightingCullingInstance;
             }
         }
+        
     }
 
 }

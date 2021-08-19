@@ -1,4 +1,6 @@
-﻿using System.Collections;
+﻿#define GBUFFER_NORMAL_ACCURATE
+
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -24,6 +26,13 @@ namespace SRPLearn{
             ShaderConstants.GBuffer2,
             ShaderConstants.GBuffer3,
         };
+        private RenderTextureFormat[] _GBufferFormats = {
+            RenderTextureFormat.ARGB32,
+            RenderTextureFormat.ARGB32,
+            RenderTextureFormat.ARGB32,
+            RenderTextureFormat.ARGB32
+        };
+
         private RenderTexture _colorTexture;
         private RenderTexture _depthTexture;
 
@@ -32,6 +41,11 @@ namespace SRPLearn{
 
         public DeferredRP(XRendererPipelineAsset setting):base(setting){
             _deferredLightingCulling = new DeferredTileLightCulling(setting.builtinAssets.deferredLightingCullingCS);
+            if(setting.deferredRPSetting.accurateNormals){
+                _GBufferFormats[1] = RenderTextureFormat.RG32;
+            }else{
+                _GBufferFormats[1] = RenderTextureFormat.ARGB32;
+            }
         }
 
 
@@ -87,9 +101,9 @@ namespace SRPLearn{
                 _commandbuffer.DisableShaderKeyword(ShaderKeywords.lightShadeByCS);
             }
             Utils.SetGlobalShaderKeyword(_commandbuffer,ShaderKeywords.deferredLightCullingDepthSlice,deferredSetting.enableDepthSliceForLightCulling);
-            Utils.SetGlobalShaderKeyword(_commandbuffer,ShaderKeywords.deferredLightCullingMode_SphereBounds,deferredSetting.tileLightCullingAlgorithm == DeferredRPSetting.TileLightCullingAlgorithm.SphereBounds);
+            Utils.SetGlobalShaderKeyword(_commandbuffer,ShaderKeywords.deferredLightCullingMode_AABB,deferredSetting.tileLightCullingAlgorithm == DeferredRPSetting.TileLightCullingAlgorithm.AABB);
             Utils.SetGlobalShaderKeyword(_commandbuffer,ShaderKeywords.deferredLightCullingMode_SideFaces,deferredSetting.tileLightCullingAlgorithm == DeferredRPSetting.TileLightCullingAlgorithm.SideFace);
-
+            Utils.SetGlobalShaderKeyword(_commandbuffer,ShaderKeywords.GBufferAccurateNormals,deferredSetting.accurateNormals);
             context.ExecuteCommandBuffer(_commandbuffer);
         }
 
@@ -212,7 +226,7 @@ namespace SRPLearn{
                 _commandbuffer.Clear();
                 _GBufferRTIs = new RenderTargetIdentifier[4];
                 for(var i = 0; i < 4; i ++){
-                    RenderTextureDescriptor descriptor = new RenderTextureDescriptor(camera.pixelWidth,camera.pixelHeight,RenderTextureFormat.ARGB32,0,1);
+                    RenderTextureDescriptor descriptor = new RenderTextureDescriptor(camera.pixelWidth,camera.pixelHeight,_GBufferFormats[i],0,1);
                     var rt = RenderTexture.GetTemporary(descriptor);
                     rt.filterMode = FilterMode.Bilinear;
                     rt.Create();
@@ -255,13 +269,12 @@ namespace SRPLearn{
         }
 
         private void OnCameraRenderingEnd(ScriptableRenderContext context){
-      
+            
         }
 
 
         protected override void Dispose(bool disposing)
         {
-            Debug.Log("DeferredRP Dispose");
             base.Dispose(disposing);
             _deferredLightConfigurator.Dispose();
             _deferredLightingCulling.Dispose();
@@ -286,6 +299,12 @@ namespace SRPLearn{
             public static readonly int TileCullingIntersectAlgroThreshold = Shader.PropertyToID("_TileCullingIntersectAlgroThreshold");
         }
 
+        public static bool support{
+            get{
+                return SystemInfo.supportedRenderTargetCount >= 4;
+            }
+        }
+
         public static class ShaderKeywords
         {
 
@@ -293,7 +312,8 @@ namespace SRPLearn{
             public const string deferredDebugOn = "DEFERRED_BUFFER_DEBUGON";
             public const string deferredLightCullingDepthSlice = "DEFERRED_LIGHT_CULLING_DEPTH_SLICE";
             public const string deferredLightCullingMode_SideFaces = "DEFERRED_LIGHT_CULLING_SIDES";
-            public const string deferredLightCullingMode_SphereBounds = "DEFERRED_LIGHT_CULLING_SPHERE_BOUNDS";
+            public const string deferredLightCullingMode_AABB = "DEFERRED_LIGHT_CULLING_AABB";
+            public const string GBufferAccurateNormals = "GBUFFER_ACCURATE_NORMAL";
         }
     }
 }

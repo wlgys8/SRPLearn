@@ -90,7 +90,13 @@ namespace SRPLearn{
             if(_renderPath == RenderPath.Forward){
                 return new ForwardRP(this);
             }else if(_renderPath == RenderPath.Deferred){
-                return new DeferredRP(this);
+                if(DeferredRP.support){
+                    return new DeferredRP(this);
+                }else{
+                    Debug.LogWarning("Device do not support required MRT for Deferred Shading");
+                    _renderPath = RenderPath.Forward;
+                    return new ForwardRP(this);
+                }
             }
             return null;
         }

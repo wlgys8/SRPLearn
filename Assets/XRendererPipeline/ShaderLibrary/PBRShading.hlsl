@@ -54,7 +54,7 @@ half3 PBRShadeDebug(PBRShadeInput input){
     if(debugMode == 1){ //albedo
         color = shadeInput.albedo;
     }else if(debugMode == 2){ //normal
-        color = (shadeInput.normal + 1) * 0.5;
+        color = shadeInput.normal;
     }else if(debugMode == 3){ //position
         color = shadeInput.positionWS / 20;
     }else if(debugMode == 4){//metalness

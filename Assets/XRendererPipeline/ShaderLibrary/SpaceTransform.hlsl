@@ -19,6 +19,19 @@ float3 TransformObjectToWorldNormal(float3 normalOS)
     return normalize(mul(normalOS, (float3x3)unity_WorldToObject));
 }
 
+float3 TransformWorldToViewNormal(float3 normalWS){
+    return normalize(mul(normalWS, (float3x3)unity_MatrixInvV));
+}
+
+half3 TransformViewToWorldNormal(half3 normalVS){
+    return normalize(mul(normalVS, (float3x3)_CameraMatrixV));
+}
+
+float3 TransformWorldToView(float3 positionWS){
+    return mul(_CameraMatrixV,float4(positionWS,1)).xyz;
+}
+
+
 float4 TransformWorldToHClip(float3 positionWS){
     return mul(unity_MatrixVP,float4(positionWS,1));
 }

@@ -9,12 +9,12 @@
 #include "./PBRInput.hlsl"
 
 
-Varyings PassVertex(Attributes input)
+Varyings VertForward(Attributes input)
 {
     Varyings output;
     output.positionCS = UnityObjectToClipPos(input.positionOS);
     output.uv = TRANSFORM_TEX(input.uv, _AlbedoMap);
-    output.normalWS = mul(unity_ObjectToWorld, float4( input.normalOS, 0.0 )).xyz;
+    output.normalWS = TransformObjectToWorldNormal(input.normalOS);
     output.positionWS = mul(unity_ObjectToWorld,input.positionOS).xyz;
     return output;
 }
@@ -74,15 +74,26 @@ half4 PBRFrag(Varyings input){
 }
 
 
-half4 PassFragment(Varyings input) : SV_Target
+half4 FragForward(Varyings input) : SV_Target
 {
     return PBRFrag(input);
 }
 
 //*******************GBuffer Begin*****************//
 
+GBufferVaryings VertGBuffer(Attributes input)
+{
+    GBufferVaryings output;
+    output.positionCS = UnityObjectToClipPos(input.positionOS);
+    output.uv = TRANSFORM_TEX(input.uv, _AlbedoMap);
+    output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+    output.positionWS = mul(unity_ObjectToWorld,input.positionOS).xyz;
+    return output;
+}
+
+
 //在Fragmenet Shader里生成GBuffer
-GBufferOutput FragPBR_GBuffer(Varyings input){
+GBufferOutput FragGBuffer(GBufferVaryings input){
     PBRShadeInput pbrShadeInput;
     pbrShadeInput.positionWS = 0;
     pbrShadeInput.albedo = UNITY_SAMPLE_TEX2D(_AlbedoMap,input.uv).rgb * _Color;

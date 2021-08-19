@@ -88,7 +88,6 @@ namespace SRPLearn{
             Shader.SetGlobalVectorArray(ShaderProperties.OtherLightPositionAndRanges,_otherLightPositionAndRanges);
             Shader.SetGlobalVectorArray(ShaderProperties.OtherLightColors,_otherLightColors);
         }
-
         public LightData SetupShaderLightingParams(ScriptableRenderContext context, ref CullingResults cullingResults){
             var visibleLights = cullingResults.visibleLights;
             var mainLightIndex = GetMainLightIndex(visibleLights);

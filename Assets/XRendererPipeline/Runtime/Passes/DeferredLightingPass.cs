@@ -12,11 +12,9 @@ namespace SRPLearn{
         [System.NonSerialized]
         private Material _lightPassMat;
         private Mesh _fullScreenMesh;
-
         public DeferredLightingPass(){
             _commandbuffer.name = "DeferredLightingPass";
         }
-
         public void Execute(ScriptableRenderContext context){
             if(!_lightPassMat){
                 _lightPassMat = new Material(Shader.Find("Hidden/SRPLearn/DeferredLightPass"));
