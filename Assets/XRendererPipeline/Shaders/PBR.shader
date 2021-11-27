@@ -11,6 +11,7 @@
         _Metalness("Metalness",Range(0.01,1)) = 0.5
         _Roughness("Roughness",Range(0.01,0.99)) = 0.5
         _Color("Color",Color) = (1,1,1,1)
+        [HideInInspector]_SSS_SimpleWrap("SSS Wrap",Color) = (1,1,1,1)
         [HideInInspector]_IBLSpecMaxMip("IBLSpecMaxMip",Int) = 1
         [Toggle(_RECEIVE_SHADOWS_OFF)] _RECEIVE_SHADOWS_OFF ("Receive Shadows Off?", Float) = 0
     }
@@ -43,6 +44,7 @@
             #pragma shader_feature _PBR_IBL_SPEC
             #pragma shader_feature _PBR_IBL_DIFF
             #pragma shader_feature ENABLE_NORMAL_MAP
+            #pragma shader_feature ENABLE_SSS //Subsurface scattering
 
             #pragma vertex VertForward
             #pragma fragment FragForward

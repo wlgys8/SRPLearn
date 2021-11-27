@@ -33,6 +33,30 @@ namespace SRPLearn.Editor
             {
                 material.DisableKeyword("ENABLE_NORMAL_MAP");
             }
+            EditorGUI.BeginChangeCheck();
+            var sssEnable = EditorGUILayout.Toggle("Subsurface Scattering", material.IsKeywordEnabled("ENABLE_SSS"));
+            if (EditorGUI.EndChangeCheck())
+            {
+                if (sssEnable)
+                {
+                    material.EnableKeyword("ENABLE_SSS");
+                }
+                else
+                {
+                    material.DisableKeyword("ENABLE_SSS");
+                }
+            }
+            if (sssEnable)
+            {
+                var color = material.GetColor("_SSS_SimpleWrap");
+                EditorGUI.BeginChangeCheck();
+                color = EditorGUILayout.ColorField("Subsurface Scattering Wrap", color);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    material.SetColor("_SSS_SimpleWrap", color);
+                }
+            }
+
         }
     }
 }

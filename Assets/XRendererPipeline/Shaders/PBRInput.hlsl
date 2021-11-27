@@ -44,4 +44,12 @@ float4 _AlbedoMap_ST;
 uint _IBLSpecMaxMip;
 CBUFFER_END
 
+///SSS Input///
+
+#if ENABLE_SSS
+
+half3 _SSS_SimpleWrap;
+
+#endif
+
 #endif

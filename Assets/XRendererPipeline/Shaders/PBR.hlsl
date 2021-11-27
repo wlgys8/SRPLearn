@@ -7,6 +7,7 @@
 #include "../ShaderLibrary/PBR_GGX.hlsl"
 #include "../ShaderLibrary/PBRDeferred.hlsl"
 #include "./PBRInput.hlsl"
+#include "../ShaderLibrary/SubsurfaceScattering.hlsl"
 
 
 Varyings VertForward(Attributes input)
@@ -45,6 +46,9 @@ half4 PBRFrag(Varyings input){
     sPointDesc.normalWS = normalWS;
 
     PBRDesc pbrDesc = InitPBRDesc((1 - metalInfo.a * (1 - _Roughness)),_Metalness * metalInfo.r,albedo * _Color);
+    #if ENABLE_SSS
+    pbrDesc.sssWrap = _SSS_SimpleWrap;
+    #endif
 
     ShadeLightDesc mainLightDesc = GetMainLightShadeDescWithShadow(positionWS,normalWS);
 

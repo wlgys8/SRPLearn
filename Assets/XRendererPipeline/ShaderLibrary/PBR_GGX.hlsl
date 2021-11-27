@@ -4,6 +4,7 @@
 #define INV_PI 0.31830989161357
 
 #include "./LightInput.hlsl"
+#include "./SubsurfaceScattering.hlsl"
 
 //着色点的几何信息
 struct ShadePointDesc{
@@ -21,6 +22,9 @@ struct PBRDesc{
     half k; //k = 0.5a
     half oneMinusK; //1 - k
     half3 f0; //菲涅尔反射的f0
+    #if ENABLE_SSS
+    half3 sssWrap; //simple subsurface scattering wrap
+    #endif
 };
 
 
@@ -50,6 +54,9 @@ PBRDesc InitPBRDesc(half roughness,half metalness,half3 albedo){
     desc.k = desc.a * 0.5;
     desc.oneMinusK = 1 - desc.k;
     desc.f0 = lerp(0.04,desc.albedo,desc.metalness);
+    #if ENABLE_SSS
+    desc.sssWrap = 0;
+    #endif
     return desc;
 };
 
@@ -118,7 +125,11 @@ half3 BRDFIBLSpec(PBRDesc desc, float2 scaleBias){
 
 half3 PBRShading(PBRDesc pbrDesc,ShadePointDesc pointDesc,ShadeLightDesc lightDesc){
     BRDFData brdfData = InitializeBRDFData(pointDesc,lightDesc);
+    #if ENABLE_SSS
+    half3 irradiance = SSS_SimpleWrapDiffuse(brdfData.NoL,pbrDesc.sssWrap) * lightDesc.color;
+    #else
     half3 irradiance = brdfData.NoL * lightDesc.color;
+    #endif
     half3 color = BRDF(pbrDesc,brdfData) * irradiance;
     return color;
 }
