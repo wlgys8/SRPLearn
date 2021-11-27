@@ -23,7 +23,7 @@ MonoBehaviour:
     _enableCSMBlend: 1
     _cascadeShadowBlendDist: 0.1
     _shadowBiasType: 1
-    _shadowAAType: 0
+    _shadowAAType: 2
     _debugShadowResolution: 0
     _debugShadowCascade: 0
     _debugShadowResolutionAlpha: 0.162

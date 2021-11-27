@@ -6,6 +6,7 @@
     {
         _AlbedoMap ("Texture", 2D) = "white" {}
         _MetalMap ("MetalMap", 2D) = "white" {}
+        _BumpMap("BumpMap",2D) = "white" {}
         _IBLSpec("IBL Specular",Cube) = "black" {}
         _Metalness("Metalness",Range(0.01,1)) = 0.5
         _Roughness("Roughness",Range(0.01,0.99)) = 0.5
@@ -41,11 +42,10 @@
             #pragma shader_feature _RECEIVE_SHADOWS_OFF
             #pragma shader_feature _PBR_IBL_SPEC
             #pragma shader_feature _PBR_IBL_DIFF
+            #pragma shader_feature ENABLE_NORMAL_MAP
 
             #pragma vertex VertForward
             #pragma fragment FragForward
-
-
 
             ENDHLSL
         }

@@ -16,9 +16,11 @@ Varyings VertForward(Attributes input)
     output.uv = TRANSFORM_TEX(input.uv, _AlbedoMap);
     output.normalWS = TransformObjectToWorldNormal(input.normalOS);
     output.positionWS = mul(unity_ObjectToWorld,input.positionOS).xyz;
+    #if ENABLE_NORMAL_MAP
+    output.tangentWS = TransformObjectToWorldVector(input.tangentOS);
+    #endif
     return output;
 }
-
 
 
 half4 PBRFrag(Varyings input){
@@ -28,6 +30,15 @@ half4 PBRFrag(Varyings input){
     float3 normalWS = normalize(input.normalWS);
     float3 viewDir = normalize(_WorldSpaceCameraPos - positionWS);
     half NoV = max(0,dot(normalWS,viewDir));
+
+    #if ENABLE_NORMAL_MAP
+    float3 tangentWS = normalize(input.tangentWS);
+    float3 binormalWS = cross(normalWS,tangentWS);
+    float3x3 TBN = float3x3(tangentWS,binormalWS,normalWS);
+    half4 normalSampled = UNITY_SAMPLE_TEX2D(_BumpMap,input.uv);
+    normalSampled = DecodeNormalFromTex(normalSampled);
+    normalWS = mul(normalSampled,TBN);
+    #endif
 
     ShadePointDesc sPointDesc;
     sPointDesc.positionWS = positionWS;
