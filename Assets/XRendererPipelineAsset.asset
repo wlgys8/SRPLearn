@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _srpBatcher: 1
   _shadowSetting:
-    _maxShadowDistance: 100
+    _maxShadowDistance: 10
     _shadowCascadeCount: 4
     _cascadeRatio1: 1
     _cascadeRatio2: 2
@@ -23,14 +23,14 @@ MonoBehaviour:
     _enableCSMBlend: 1
     _cascadeShadowBlendDist: 0.1
     _shadowBiasType: 1
-    _shadowAAType: 4
+    _shadowAAType: 0
     _debugShadowResolution: 0
     _debugShadowCascade: 0
     _debugShadowResolutionAlpha: 0.162
     _drawCascadeCullingSphere: 0
     _cascadeBlendCullingFactor: 0
   _antiAlias:
-    antiAliasType: 0
+    antiAliasType: 2
     msaaLevel: 2
     fXAADebug:
       debugEdge: 0
@@ -42,3 +42,10 @@ MonoBehaviour:
       qualitySubPixTrim: 0
       qualitySubPixCap: 1
   _builtinAssets: {fileID: 11400000, guid: 311d45aeff2e44843951fec010acced8, type: 2}
+  _renderPath: 0
+  _deferredSetting:
+    _outputDebug: 0
+    lightShadeByComputeShader: 0
+    tileLightCullingAlgorithm: 0
+    enableDepthSliceForLightCulling: 1
+    accurateNormals: 1

@@ -57,5 +57,17 @@ namespace SRPLearn{
         public FXAADebugSetting fXAADebug = new FXAADebugSetting();
 
         public FXAAConfig fXAAConfig = new FXAAConfig();
+
+        public bool isFXAAOn{
+            get{
+                switch(antiAliasType){
+                    case AAType.FXAAV1:
+                    case AAType.FXAAQuality:
+                    case AAType.FXAAConsole:
+                    return true;
+                }
+                return false;
+            }
+        }
     }
 }

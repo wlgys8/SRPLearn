@@ -1,0 +1,290 @@
+﻿#include "../ShaderLibrary/DeferredParams.hlsl"
+#include "../ShaderLibrary/SpaceTransform.hlsl"
+#include "../ShaderLibrary/PBRDeferred.hlsl"
+#include "../ShaderLibrary/TileDeferredInput.hlsl"
+
+#pragma multi_compile _ X_SHADOW_BIAS_RECEIVER_PIXEL
+#pragma multi_compile _ X_SHADOW_PCF
+#pragma multi_compile _ X_CSM_BLEND
+#pragma multi_compile _ DEFERRED_BUFFER_DEBUGON
+#pragma multi_compile _ DEFERRED_LIGHTSHADE_BY_CS
+#pragma multi_compile _ DEFERRED_LIGHT_CULLING_AABB DEFERRED_LIGHT_CULLING_SIDES
+#pragma multi_compile _ DEFERRED_LIGHT_CULLING_DEPTH_SLICE
+#pragma multi_compile _ UNITY_REVERSED_Z
+#pragma multi_compile _ GBUFFER_ACCURATE_NORMAL
+
+#pragma kernel CSMain
+
+#define MAX_LIGHT_COUNT 1024
+#define THREAD_NUM_X 16
+#define THREAD_NUM_Y 16
+#define THREAD_COUNT 256
+
+
+/**
+
+一些依赖的全局对象说明
+
+//GBuffer.hlsl
+//以下为GBuffer纹理，由管线全局设置
+Texture2D _GBuffer0;
+Texture2D _GBuffer1;
+Texture2D _GBuffer2;
+Texture2D _GBuffer3;
+
+// LightInput.hlsl
+// 以下为DeferredShading灯光相关的全局数据,由DeferredLightConfigurator.cs设置
+StructuredBuffer<float4> _DeferredOtherLightPositionAndRanges;
+StructuredBuffer<half4> _DeferredOtherLightColors;
+uniform uint _DeferredOtherLightCount
+**/
+
+Texture2D _XDepthTexture;
+
+#if DEFERRED_LIGHTSHADE_BY_CS
+RWTexture2D<float4> _OutTexture;
+#else
+RWStructuredBuffer<uint> _RWTileLightsArgsBuffer;
+RWStructuredBuffer<uint> _RWTileLightsIndicesBuffer;
+#endif
+uniform float4 _ZBufferParams;
+//近平面左下角
+uniform float3 _CameraNearPlaneLB;
+//近平面水平基向量
+uniform float3 _CameraNearBasisH;
+//近平面垂直基向量
+uniform float3 _CameraNearBasisV;
+
+groupshared uint tileMinDepthInt = 0xFFFFFFFF;
+groupshared uint tileMaxDepthInt = 0;
+
+groupshared uint tileVisibleLightCount = 0;
+groupshared uint tileVisibleLightIndices[MAX_LIGHT_COUNT];
+
+groupshared float tileDepthSliceInterval = 1;
+groupshared uint gemoDepthMask = 0;
+
+inline float LinearEyeDepth( float z )
+{
+    return (1.0 / (_ZBufferParams.z * z + _ZBufferParams.w));
+}
+
+//p1,p2与摄像机(0,0,0)三点构成了视锥侧平面
+bool IntersectSide(float3 p1,float3 p2,float4 lightSphere){
+    float3 n = -normalize(cross(p1,p2));
+    float d = dot(lightSphere.xyz,n);
+    return d < lightSphere.w;
+}
+
+//aabb.xy为中心,aabb.zw为extents
+bool IntersectAABB(float4 aabb,float4 lightSphere){
+    float2 p = aabb.xy + aabb.zw * sign(lightSphere.xy - aabb.xy);
+    float2 d = p - lightSphere.xy;
+    return dot(d,d) < lightSphere.w * lightSphere.w;
+}
+
+uint GetLightDepthSliceMask(float tileDepthMin,float tileDepthMax,float lightDepthMin,float lightDepthMax,float depthSliceInterval){
+    uint fromSliceIndex = max(0,floor((lightDepthMin - tileDepthMin) / depthSliceInterval));
+    uint toSliceIndex = min(31,floor((lightDepthMax - tileDepthMin) / depthSliceInterval));
+    uint mask = 0;
+    for(uint i = fromSliceIndex; i <= toSliceIndex; i ++){
+        mask |= (1 << i);
+    }
+    return mask;
+}
+
+//tileFrustumCorners是tile视锥minDepth平面的4个顶点
+bool Intersect(float3 tileFrustumCorners[4],float4 lightSphere){
+    float tileDepthMin = asfloat(tileMinDepthInt);
+    float tileDepthMax = asfloat(tileMaxDepthInt);
+    float lightRadius = lightSphere.w;
+    float lightDepthMin = lightSphere.z - lightRadius;
+    float lightDepthMax = lightSphere.z + lightRadius;
+    if(lightDepthMin > tileDepthMax || lightDepthMax < tileDepthMin){
+        return false;
+    }
+
+    #if DEFERRED_LIGHT_CULLING_DEPTH_SLICE
+    uint lightDepthSliceMask = GetLightDepthSliceMask(tileDepthMin,tileDepthMax,lightDepthMin,lightDepthMax,tileDepthSliceInterval);
+    if((lightDepthSliceMask & gemoDepthMask) == 0){
+        return false;
+    }
+    #endif
+    
+    #if DEFERRED_LIGHT_CULLING_AABB
+        float minZ = max(tileDepthMin,lightDepthMin);
+        float maxZ = min(tileDepthMax,lightDepthMax);
+        float farPlaneScale = maxZ / tileDepthMin;
+        float nearPlaneScale = minZ / tileDepthMin;
+        float2 minXY = tileFrustumCorners[0].xy;
+        float2 maxXY = tileFrustumCorners[2].xy;
+        minXY = min(minXY * nearPlaneScale ,minXY * farPlaneScale);
+        maxXY = max(maxXY * nearPlaneScale ,maxXY * farPlaneScale);
+        float4 aabb = float4((minXY + maxXY) * 0.5,(maxXY - minXY) * 0.5);
+        return IntersectAABB(aabb,lightSphere);
+    #else
+        return IntersectSide(tileFrustumCorners[0],tileFrustumCorners[1],lightSphere)
+        && IntersectSide(tileFrustumCorners[1],tileFrustumCorners[2],lightSphere)
+        && IntersectSide(tileFrustumCorners[2],tileFrustumCorners[3],lightSphere)
+        && IntersectSide(tileFrustumCorners[3],tileFrustumCorners[0],lightSphere);
+    #endif
+}
+
+
+
+#if DEFERRED_BUFFER_DEBUGON
+half3 ShadeDebug(PBRShadeInput shadeInput,float depth){
+    int debugMode = _DeferredDebugMode;
+    half3 color = 0;
+    if(debugMode == 1){ //albedo
+        color = shadeInput.albedo;
+    }else if(debugMode == 2){ //normal
+        color = (shadeInput.normal + 1) * 0.5;
+        // color = shadeInput.normal.z;
+    }else if(debugMode == 3){ //position
+        color = shadeInput.positionWS / 20;
+    }else if(debugMode == 4){//metalness
+        color = shadeInput.metalness;
+    }else if(debugMode == 5){ //roughness   
+        color = 1 - shadeInput.smooth;
+    }else if(debugMode == 6){ //visible light count
+        if(tileVisibleLightCount > MAX_LIGHT_COUNT_PER_TILE){
+            color = half4(1,0,0,1);
+        }else{
+            color = tileVisibleLightCount * 1.0 / MAX_LIGHT_COUNT_PER_TILE;
+        }
+    }else if(debugMode == 7){ //depth
+        color = depth;
+    }
+    return color;
+}
+#endif
+
+#if DEFERRED_LIGHTSHADE_BY_CS
+void ShadePixelLight(uint2 xy,float depth){
+    if((float)xy.x > _ScreenParams.x || (float)xy.y > _ScreenParams.y){
+        return;
+    }
+    float2 uv = xy * (_ScreenParams.zw - 1);
+    half4 g0 = _GBuffer0[xy];
+    half4 g1 = _GBuffer1[xy];
+    half4 g2 = _GBuffer2[xy];
+    half4 g3 = _GBuffer3[xy];
+    float3 positionWS = ReconstructPositionWS(uv,depth);
+    PBRShadeInput shadeInput;
+    shadeInput.positionWS = positionWS;
+    DecodeGBuffer(shadeInput,g0,g1,g2,g3);
+    half3 color = 0;
+    #if DEFERRED_BUFFER_DEBUGON
+    color = ShadeDebug(shadeInput,depth);
+    #else
+    //着色点几何信息
+    DECLARE_SHADE_POINT_DESC(sPointDesc,shadeInput);
+    //pbr材质相关
+    DECLARE_PBR_DESC(pbrDesc,shadeInput);
+    //平行光
+    ShadeLightDesc mainLightDesc = GetMainLightShadeDescWithShadow(shadeInput.positionWS,shadeInput.normal);
+    color = PBRShading(pbrDesc,sPointDesc,mainLightDesc);
+
+    for(uint i = 0; i < min(tileVisibleLightCount,MAX_LIGHT_COUNT_PER_TILE); i ++){
+        uint lightIndex = tileVisibleLightIndices[i];
+        float4 lightSphere = _DeferredOtherLightPositionAndRanges[lightIndex];
+        ShadeLightDesc lightDesc = GetPointLightShadeDesc(lightSphere,_DeferredOtherLightColors[lightIndex],shadeInput.positionWS);
+        color += PBRShading(pbrDesc,sPointDesc,lightDesc);
+    }
+    #endif
+    _OutTexture[xy] = half4(color,1);
+}
+
+#endif
+
+
+
+
+[numthreads(THREAD_NUM_X,THREAD_NUM_Y,1)]
+void CSMain (uint3 id : SV_DispatchThreadID,uint3 groupId:SV_GROUPID, uint groupIndex:SV_GROUPINDEX)
+{   
+    //stage 1. 初始化groupshared变量
+    if(groupIndex == 0){
+        tileMinDepthInt = 0xFFFFFFFF;
+        tileMaxDepthInt = 0;
+        tileVisibleLightCount = 0;
+        gemoDepthMask = 0;
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+
+    bool inScreen = (float)id.x < _ScreenParams.x && (float)id.y < _ScreenParams.y;
+    //stage 2. 计算tile的min/max depth
+    float depth = 0;
+    float linearDepth = 0;
+    if(inScreen){
+        depth = _XDepthTexture[id.xy].r;
+        #if UNITY_REVERSED_Z
+        linearDepth = LinearEyeDepth(1 - depth);
+        #else
+        linearDepth = LinearEyeDepth(depth);
+        #endif
+        InterlockedMin(tileMinDepthInt,asuint(linearDepth));
+        InterlockedMax(tileMaxDepthInt,asuint(linearDepth));
+    }
+    GroupMemoryBarrierWithGroupSync();
+
+    float tileDepthMin = asfloat(tileMinDepthInt);
+    float tileDepthMax = asfloat(tileMaxDepthInt);
+
+    #if DEFERRED_LIGHT_CULLING_DEPTH_SLICE
+    //进行深度切割
+    float depthSliceInterval = max(0.01,(tileDepthMax - tileDepthMin) / 32.0);
+    if(inScreen){
+        uint depthSliceIndex = floor((linearDepth -  tileDepthMin) / depthSliceInterval);
+        InterlockedOr(gemoDepthMask,1 << depthSliceIndex);
+    }
+    if(groupIndex == 0){
+        tileDepthSliceInterval = depthSliceInterval;
+    }
+    GroupMemoryBarrierWithGroupSync();
+    #endif
+    //switch to light
+    //一个pass处理16x16=256盏灯
+    uint passCnt = ceil((float)_DeferredOtherLightCount / THREAD_COUNT);
+    uint2 tileId = groupId.xy;
+    float tileDepthMinScale = tileDepthMin / _ProjectionParams.y; //_ProjectionParams.y is nearPlaneZ
+    float3 tileFrustumCorners[4];
+    tileFrustumCorners[0] = tileDepthMinScale * (_CameraNearPlaneLB + tileId.x * _CameraNearBasisH + tileId.y * _CameraNearBasisV);
+    tileFrustumCorners[1] = tileFrustumCorners[0] + _CameraNearBasisH * tileDepthMinScale;
+    tileFrustumCorners[2] = tileFrustumCorners[0] + (_CameraNearBasisH + _CameraNearBasisV) * tileDepthMinScale;
+    tileFrustumCorners[3] = tileFrustumCorners[0] + _CameraNearBasisV * tileDepthMinScale;
+
+    for(uint passIdx = 0; passIdx < passCnt; passIdx ++){
+        uint lightIndex = passIdx * THREAD_COUNT + groupIndex;
+        if(lightIndex < _DeferredOtherLightCount){
+            float4 lightSphere = _DeferredOtherLightPositionAndRanges[lightIndex];
+            lightSphere.xyz = mul(_CameraMatrixV_Unity,float4(lightSphere.xyz,1));//转到CameraView坐标系
+            if(Intersect(tileFrustumCorners,lightSphere)){
+                uint offset;
+                InterlockedAdd(tileVisibleLightCount,1,offset);
+                tileVisibleLightIndices[offset] = lightIndex;
+            }
+        }
+    }
+    GroupMemoryBarrierWithGroupSync();
+
+    //如果直接使用CS进行着色，那么在这里进行光照计算，否则把Tile的灯光列表写入Buffer
+    #if DEFERRED_LIGHTSHADE_BY_CS
+    //switch back to pixel
+    ShadePixelLight(id.xy,depth);
+    #else
+    //switch to light
+    uint tileIndex = tileId.y * _DeferredTileParams.z + tileId.x;
+    if(groupIndex == 0){
+        _RWTileLightsArgsBuffer[tileIndex] = tileVisibleLightCount;
+    }
+    if(groupIndex < tileVisibleLightCount && groupIndex < MAX_LIGHT_COUNT_PER_TILE){
+        uint visibleLightIndex = tileVisibleLightIndices[groupIndex];
+        _RWTileLightsIndicesBuffer[tileIndex * MAX_LIGHT_COUNT_PER_TILE + groupIndex] = visibleLightIndex;
+    }
+    #endif
+}
+
+

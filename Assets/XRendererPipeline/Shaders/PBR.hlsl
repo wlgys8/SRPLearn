@@ -5,47 +5,21 @@
 #include "../ShaderLibrary/Shadow.hlsl"
 #include "../ShaderLibrary/SpaceTransform.hlsl"
 #include "../ShaderLibrary/PBR_GGX.hlsl"
-
-struct Attributes
-{
-    float4 positionOS   : POSITION;
-    float2 uv           : TEXCOORD0;
-    float3 normalOS     : NORMAL;
-};
-
-struct Varyings
-{
-    float2 uv           : TEXCOORD0;
-    float4 positionCS   : SV_POSITION;
-    float3 normalWS    : TEXCOORD1;
-    float3 positionWS   : TEXCOORD2;
-};
-
-UNITY_DECLARE_TEX2D(_AlbedoMap);
-UNITY_DECLARE_TEX2D(_MetalMap);
-UNITY_DECLARE_TEX2D(_BRDFLUT);
-
-samplerCUBE _IBLSpec;
+#include "../ShaderLibrary/PBRDeferred.hlsl"
+#include "./PBRInput.hlsl"
 
 
-CBUFFER_START(UnityPerMaterial)
-float _Metalness;
-float _Roughness;
-half4 _Color;
-float4 _AlbedoMap_ST;
-uint _IBLSpecMaxMip;
-CBUFFER_END
-
-
-Varyings PassVertex(Attributes input)
+Varyings VertForward(Attributes input)
 {
     Varyings output;
     output.positionCS = UnityObjectToClipPos(input.positionOS);
     output.uv = TRANSFORM_TEX(input.uv, _AlbedoMap);
-    output.normalWS = mul(unity_ObjectToWorld, float4( input.normalOS, 0.0 )).xyz;
+    output.normalWS = TransformObjectToWorldNormal(input.normalOS);
     output.positionWS = mul(unity_ObjectToWorld,input.positionOS).xyz;
     return output;
 }
+
+
 
 half4 PBRFrag(Varyings input){
     half4 albedo = UNITY_SAMPLE_TEX2D(_AlbedoMap,input.uv);
@@ -53,34 +27,24 @@ half4 PBRFrag(Varyings input){
     float3 positionWS = input.positionWS;
     float3 normalWS = normalize(input.normalWS);
     float3 viewDir = normalize(_WorldSpaceCameraPos - positionWS);
+    half NoV = max(0,dot(normalWS,viewDir));
 
-    XDirLight mainLight = GetMainLight();
+    ShadePointDesc sPointDesc;
+    sPointDesc.positionWS = positionWS;
+    sPointDesc.normalWS = normalWS;
 
-    //初始化相关参数
-    float3 lightDir = mainLight.direction;
+    PBRDesc pbrDesc = InitPBRDesc((1 - metalInfo.a * (1 - _Roughness)),_Metalness * metalInfo.r,albedo * _Color);
 
-    PBRDesc pbrDesc;
-    pbrDesc.albedo = albedo * _Color;
-    pbrDesc.roughness = (1 - metalInfo.a * (1 - _Roughness)); //MetalMap的alpha通道保存的是光滑度
-    pbrDesc.metalness = _Metalness * metalInfo.r; //MetalMap的r通道保存了金属度
+    ShadeLightDesc mainLightDesc = GetMainLightShadeDescWithShadow(positionWS,normalWS);
 
-    BRDFData brdfData;
-    InitializeData(lightDir,viewDir,normalWS,pbrDesc,brdfData);
-    half NoV = brdfData.NoV;
-
-    //直接光的辐照度
-    float shadowAtten = GetMainLightShadowAtten(positionWS,normalWS);
-    half3 directIrradiance = brdfData.NoL * mainLight.color * shadowAtten;
-    half3 color = BRDF(pbrDesc,brdfData) * directIrradiance;
+    //直接光的PBR着色
+    half3 color = PBRShading(pbrDesc,sPointDesc,mainLightDesc);
     
     //点光源的辐照度计算
     int lightCount = GetOtherLightCount();
     for(int i = 0; i < lightCount; i ++){
-        XOtherLight otherLight = GetOtherLight(i);
-        PointLightInteractData interData = GetPointLightInteractData(otherLight,positionWS);
-        InitializeBRDFData(interData.lightDir,viewDir,normalWS,brdfData);
-        half3 pointLightIrradiance = brdfData.NoL * otherLight.color.rgb * interData.atten;
-        color += BRDF(pbrDesc,brdfData) * pointLightIrradiance;
+        ShadeLightDesc lightDesc = GetOtherLightShadeDesc(i,positionWS);
+        color += PBRShading(pbrDesc,sPointDesc,lightDesc);
     }
 
     half3 indirectColor = 0;
@@ -110,9 +74,35 @@ half4 PBRFrag(Varyings input){
 }
 
 
-half4 PassFragment(Varyings input) : SV_Target
+half4 FragForward(Varyings input) : SV_Target
 {
     return PBRFrag(input);
+}
+
+//*******************GBuffer Begin*****************//
+
+GBufferVaryings VertGBuffer(Attributes input)
+{
+    GBufferVaryings output;
+    output.positionCS = UnityObjectToClipPos(input.positionOS);
+    output.uv = TRANSFORM_TEX(input.uv, _AlbedoMap);
+    output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+    output.positionWS = mul(unity_ObjectToWorld,input.positionOS).xyz;
+    return output;
+}
+
+
+//在Fragmenet Shader里生成GBuffer
+GBufferOutput FragGBuffer(GBufferVaryings input){
+    PBRShadeInput pbrShadeInput;
+    pbrShadeInput.positionWS = 0;
+    pbrShadeInput.albedo = UNITY_SAMPLE_TEX2D(_AlbedoMap,input.uv).rgb * _Color;
+    half4 metalInfo = UNITY_SAMPLE_TEX2D(_MetalMap,input.uv);
+    pbrShadeInput.metalness = metalInfo.r * _Metalness;
+    pbrShadeInput.smooth = metalInfo.a * (1 - _Roughness);
+    pbrShadeInput.normal = normalize(input.normalWS);
+    pbrShadeInput.positionWS = input.positionWS;
+    return EncodePBRInputToGBuffer(pbrShadeInput);
 }
 
 

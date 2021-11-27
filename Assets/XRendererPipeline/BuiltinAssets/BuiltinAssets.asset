@@ -13,3 +13,6 @@ MonoBehaviour:
   m_Name: BuiltinAssets
   m_EditorClassIdentifier: 
   _BRDFLUT: {fileID: 2800000, guid: 0b057aabf3fb1405ca30dd2fc5efdfa5, type: 3}
+  _defaultMaterial: {fileID: 2100000, guid: a0f35f69ff2694d57a8997867546c244, type: 2}
+  _deferredLightingCulling: {fileID: 7200000, guid: 7ae46ce18aa18434a9657063ba37ed02,
+    type: 3}

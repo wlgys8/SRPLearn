@@ -28,9 +28,16 @@ half4 _XOtherLightColors[MAX_OTHER_VISIBLE_LIGHT_COUNT];
 
 CBUFFER_END
 
-
 #define OTHER_LIGHT_COUNT unity_LightData.y
 
+StructuredBuffer<float4> _DeferredOtherLightPositionAndRanges;
+StructuredBuffer<half4> _DeferredOtherLightColors;
+uniform uint _DeferredOtherLightCount;
+
+
+int GetOtherLightCount(){
+    return clamp(OTHER_LIGHT_COUNT,0,MAX_OTHER_LIGHT_PER_OBJECT);
+}
 
 struct XDirLight{
     float3 direction;
@@ -42,6 +49,15 @@ struct XOtherLight{
     half4 color;
 };
 
+struct ShadeLightDesc{
+    half3 dir;
+    half3 color;
+};
+
+struct PointLightInteractData{
+    half3 lightDir;
+    half atten;
+};
 
 XDirLight GetMainLight(){
     XDirLight light;
@@ -49,6 +65,7 @@ XDirLight GetMainLight(){
     light.color = _XMainLightColor;
     return light;
 }
+
 
 XOtherLight GetOtherLight(int index){
     XOtherLight light;
@@ -61,6 +78,8 @@ XOtherLight GetOtherLight(int index){
     light.color = color;
     return light;
 }
+
+
 
 
 

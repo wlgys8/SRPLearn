@@ -15,10 +15,8 @@ namespace SRPLearn{
             renderTextureDescriptor.colorFormat = RenderTextureFormat.ARGB32;
             renderTextureDescriptor.msaaSamples = cameraRenderDescription.msaaLevel;
             renderTextureDescriptor.enableRandomWrite = false;
-
+            renderTextureDescriptor.memoryless = RenderTextureMemoryless.MSAA;
             commandBuffer.GetTemporaryRT(_colorTexture,renderTextureDescriptor,FilterMode.Bilinear);
-
-            // RenderTextureMemoryless.
             return _colorTexture;
         }
 

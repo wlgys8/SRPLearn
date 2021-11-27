@@ -16,7 +16,7 @@
 
     SubShader
     {
-        Tags { "RenderType"="Opaque" "LightMode"="XForwardBase"}
+        Tags { "RenderType"="Opaque"}
         LOD 100
 
         HLSLINCLUDE
@@ -28,6 +28,7 @@
         Pass
         {
             Name "DEFAULT"
+            Tags {"LightMode"="XForwardBase"}
 
             Cull Back
 
@@ -35,14 +36,16 @@
 
             #pragma multi_compile _ X_SHADOW_BIAS_RECEIVER_PIXEL
             #pragma multi_compile _ X_SHADOW_PCF
-            
-            #pragma vertex PassVertex
-            #pragma fragment PassFragment
+            #pragma shader_feature X_CSM_BLEND
 
             #pragma shader_feature _RECEIVE_SHADOWS_OFF
-            #pragma shader_feature X_CSM_BLEND
             #pragma shader_feature _PBR_IBL_SPEC
             #pragma shader_feature _PBR_IBL_DIFF
+
+            #pragma vertex VertForward
+            #pragma fragment FragForward
+
+
 
             ENDHLSL
         }
@@ -87,6 +90,23 @@
             #pragma vertex ShadowDebugVertex
             #pragma fragment ShadowDebugFragment
         
+            ENDHLSL
+        }
+
+        Pass{
+            Tags {"LightMode"="Deferred"}
+            
+            Name "DEFERRED"
+
+            Cull Back
+            
+            HLSLPROGRAM
+
+            #pragma shader_feature GBUFFER_ACCURATE_NORMAL
+        
+            #pragma vertex VertGBuffer
+            #pragma fragment FragGBuffer
+
             ENDHLSL
         }
     }
