@@ -35,6 +35,20 @@ half4 unity_LightIndices[2];
 CBUFFER_END
 
 
+ half4 DecodeNormalFromTex(half4 packednormal)
+{
+#if defined(SHADER_API_GLES) || defined(SHADER_API_MOBILE)
+    return half4(packednormal.xyz * 2 - 1,0);
+#else
+    float3 normal;
+    normal.xy = packednormal.wy * 2 - 1;
+    normal.z = sqrt(1 - normal.x*normal.x - normal.y * normal.y);
+    return half4(normal,0);
+#endif
+}
+
+
+
 
 
 

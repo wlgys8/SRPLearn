@@ -9,7 +9,7 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: Iron
   m_Shader: {fileID: 4800000, guid: 588d7cb9dcc30447aa8a3772bdccb31d, type: 3}
-  m_ShaderKeywords: _PBR_IBL_DIFF _PBR_IBL_SPEC
+  m_ShaderKeywords: ENABLE_NORMAL_MAP _PBR_IBL_DIFF _PBR_IBL_SPEC
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -28,7 +28,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BumpMap:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: 04f87cb65783f4d9a8ebe3f668b35de6, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _DetailAlbedoMap:

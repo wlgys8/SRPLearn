@@ -14,6 +14,11 @@ float3 TransformObjectToWorld(float3 positionOS){
     return positionWS.xyz;
 }
 
+float TransformObjectToWorldVector(float3 vectorOS){
+    float4 vectorWS = mul(unity_ObjectToWorld,float4(vectorOS,0));
+    return vectorWS.xyz;
+}
+
 float3 TransformObjectToWorldNormal(float3 normalOS)
 {
     return normalize(mul(normalOS, (float3x3)unity_WorldToObject));
